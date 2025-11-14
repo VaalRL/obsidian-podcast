@@ -216,9 +216,19 @@ export class PlayerView extends ItemView {
 	/**
 	 * Handle play/pause button click
 	 */
-	private handlePlayPause(): void {
-		// Placeholder - will integrate with PlayerController
-		console.log('Play/Pause clicked');
+	private async handlePlayPause(): Promise<void> {
+		try {
+			const playerController = this.plugin.playerController;
+			const state = playerController.getState();
+
+			if (state.status === 'playing') {
+				await playerController.pause();
+			} else if (state.status === 'paused' || state.status === 'stopped') {
+				await playerController.play();
+			}
+		} catch (error) {
+			console.error('Failed to toggle playback:', error);
+		}
 	}
 
 	/**
@@ -240,46 +250,85 @@ export class PlayerView extends ItemView {
 	/**
 	 * Handle skip backward button click (15 seconds)
 	 */
-	private handleSkipBackward(): void {
-		// Placeholder - will integrate with PlayerController
-		console.log('Skip backward clicked');
+	private async handleSkipBackward(): Promise<void> {
+		try {
+			const playerController = this.plugin.playerController;
+			await playerController.skipBackward(15);
+		} catch (error) {
+			console.error('Failed to skip backward:', error);
+		}
 	}
 
 	/**
 	 * Handle skip forward button click (30 seconds)
 	 */
-	private handleSkipForward(): void {
-		// Placeholder - will integrate with PlayerController
-		console.log('Skip forward clicked');
+	private async handleSkipForward(): Promise<void> {
+		try {
+			const playerController = this.plugin.playerController;
+			await playerController.skipForward(30);
+		} catch (error) {
+			console.error('Failed to skip forward:', error);
+		}
 	}
 
 	/**
 	 * Handle seek bar click
 	 */
-	private handleSeek(event: MouseEvent, progressBar: HTMLElement): void {
-		const rect = progressBar.getBoundingClientRect();
-		const clickX = event.clientX - rect.left;
-		const percentage = (clickX / rect.width) * 100;
+	private async handleSeek(event: MouseEvent, progressBar: HTMLElement): Promise<void> {
+		try {
+			const playerController = this.plugin.playerController;
+			const state = playerController.getState();
 
-		console.log(`Seek to ${percentage.toFixed(2)}%`);
-		// Placeholder - will integrate with PlayerController
+			if (!state.currentEpisode) {
+				return;
+			}
+
+			const rect = progressBar.getBoundingClientRect();
+			const clickX = event.clientX - rect.left;
+			const percentage = clickX / rect.width;
+
+			// Calculate target position in seconds
+			const duration = state.currentEpisode.duration;
+			const targetPosition = duration * percentage;
+
+			await playerController.seek(targetPosition);
+		} catch (error) {
+			console.error('Failed to seek:', error);
+		}
 	}
 
 	/**
 	 * Handle volume change
 	 */
-	private handleVolumeChange(volume: number): void {
-		console.log(`Volume changed to ${volume}%`);
-		// Placeholder - will integrate with PlayerController
+	private async handleVolumeChange(volume: number): Promise<void> {
+		try {
+			const playerController = this.plugin.playerController;
+			// Convert percentage (0-100) to decimal (0-1)
+			await playerController.setVolume(volume / 100);
+		} catch (error) {
+			console.error('Failed to change volume:', error);
+		}
 	}
 
 	/**
 	 * Handle speed change (cycle through speeds)
 	 */
-	private handleSpeedChange(): void {
-		// Cycle through common speeds: 1.0x → 1.25x → 1.5x → 2.0x → 1.0x
-		console.log('Speed change clicked');
-		// Placeholder - will integrate with PlayerController
+	private async handleSpeedChange(): Promise<void> {
+		try {
+			const playerController = this.plugin.playerController;
+			const state = playerController.getState();
+			const currentSpeed = state.playbackSpeed;
+
+			// Cycle through common speeds: 1.0x → 1.25x → 1.5x → 2.0x → 1.0x
+			const speeds = [1.0, 1.25, 1.5, 2.0];
+			const currentIndex = speeds.indexOf(currentSpeed);
+			const nextIndex = (currentIndex + 1) % speeds.length;
+			const nextSpeed = speeds[nextIndex];
+
+			await playerController.setPlaybackSpeed(nextSpeed);
+		} catch (error) {
+			console.error('Failed to change playback speed:', error);
+		}
 	}
 
 	/**
@@ -307,8 +356,61 @@ export class PlayerView extends ItemView {
 	 * This will be called periodically to keep the UI in sync
 	 */
 	private updatePlayerState(): void {
-		// Placeholder - will integrate with PlayerController to get current state
-		// For now, this is just a skeleton
+		try {
+			const playerController = this.plugin.playerController;
+			const state = playerController.getState();
+
+			// Update episode info
+			const titleEl = this.playerContentEl.querySelector('.episode-title') as HTMLElement;
+			const podcastEl = this.playerContentEl.querySelector('.podcast-name') as HTMLElement;
+			const durationEl = this.playerContentEl.querySelector('.episode-duration') as HTMLElement;
+
+			if (state.currentEpisode) {
+				if (titleEl) titleEl.textContent = state.currentEpisode.title;
+				if (podcastEl) podcastEl.textContent = 'Playing...';
+				if (durationEl) durationEl.textContent = this.formatTime(state.currentEpisode.duration);
+			} else {
+				if (titleEl) titleEl.textContent = 'No episode playing';
+				if (podcastEl) podcastEl.textContent = 'Select a podcast to start';
+				if (durationEl) durationEl.textContent = '--:--';
+			}
+
+			// Update play/pause button
+			const playPauseBtn = this.playerContentEl.querySelector('.player-button-play-pause') as HTMLElement;
+			if (playPauseBtn) {
+				playPauseBtn.innerHTML = state.status === 'playing' ? '⏸' : '▶️';
+			}
+
+			// Update time display
+			const currentTimeEl = this.playerContentEl.querySelector('.current-time') as HTMLElement;
+			const totalTimeEl = this.playerContentEl.querySelector('.total-time') as HTMLElement;
+
+			if (currentTimeEl) currentTimeEl.textContent = this.formatTime(state.position);
+			if (totalTimeEl && state.currentEpisode) {
+				totalTimeEl.textContent = this.formatTime(state.currentEpisode.duration);
+			}
+
+			// Update progress bar
+			const progressFill = this.playerContentEl.querySelector('.progress-fill') as HTMLElement;
+			if (progressFill && state.currentEpisode) {
+				const percentage = (state.position / state.currentEpisode.duration) * 100;
+				progressFill.style.width = `${percentage}%`;
+			}
+
+			// Update volume slider
+			const volumeSlider = this.playerContentEl.querySelector('.volume-slider') as HTMLInputElement;
+			if (volumeSlider) {
+				volumeSlider.value = String(state.volume * 100);
+			}
+
+			// Update speed button
+			const speedBtn = this.playerContentEl.querySelector('.speed-button') as HTMLElement;
+			if (speedBtn) {
+				speedBtn.textContent = `${state.playbackSpeed.toFixed(2)}x`;
+			}
+		} catch (error) {
+			console.error('Failed to update player state:', error);
+		}
 	}
 
 	/**

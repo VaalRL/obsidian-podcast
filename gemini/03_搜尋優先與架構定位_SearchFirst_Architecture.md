@@ -42,11 +42,13 @@
 - `src/model/` - 資料模型
   - `index.ts` - 核心模型定義（Podcast、Episode、Playlist、Queue）
 
-- `src/storage/` - 資料持久化
-  - `SubscriptionStore.ts` - 訂閱儲存
-  - `ProgressStore.ts` - 播放進度儲存
-  - `SettingsStore.ts` - 設定儲存
-  - `LocalCache.ts` - 本地快取
+- `src/storage/` - 資料持久化（使用檔案系統）
+  - `FileSystemStore.ts` - 檔案系統儲存基礎類別
+  - `SubscriptionStore.ts` - 訂閱儲存（JSON/YAML 檔案）
+  - `ProgressStore.ts` - 播放進度儲存（JSON 檔案）
+  - `SettingsStore.ts` - 設定儲存（JSON 檔案）
+  - `CacheStore.ts` - 本地快取（檔案快取）
+  - `DataPathManager.ts` - 資料路徑管理
 
 - `src/ui/` - 使用者介面
   - `PlayerView.ts` - 播放器檢視

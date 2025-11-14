@@ -58,7 +58,7 @@
 - `src/playlist/` - 播放清單管理
 - `src/queue/` - 播放佇列管理
 - `src/model/` - 資料模型定義（Podcast、Episode、Playlist 等）
-- `src/storage/` - 資料持久化（訂閱、播放進度、設定）
+- `src/storage/` - 資料持久化（使用可設定資料夾中的 JSON/YAML/Markdown 檔案）
 - `src/markdown/` - Markdown 整合與筆記匯出
 - `src/ui/` - 使用者介面（播放器、列表、設定）
 - `src/settings.ts` - 設定管理

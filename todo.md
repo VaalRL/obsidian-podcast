@@ -128,25 +128,72 @@
 
 ## 📋 階段六：資料持久化
 
+> **資料儲存策略**：使用可設定的資料夾（預設 `.obsidian/plugins/podcast-player/data/`）中的 md/json/yaml 檔案來儲存所有資料
+
 ### 儲存模組（src/storage/）
+- [ ] FileSystemStore.ts - 檔案系統儲存基礎類別
+  - [ ] 檔案讀寫抽象層（支援 JSON/YAML/Markdown）
+  - [ ] 資料夾路徑設定與管理
+  - [ ] 檔案鎖定與並發控制
+  - [ ] 錯誤處理與備份機制
+  - [ ] 單元測試（FileSystemStore.test.ts）
+
 - [ ] SubscriptionStore.ts - 訂閱儲存
-  - [ ] Podcast 訂閱資料管理
-  - [ ] 資料遷移機制
+  - [ ] 儲存格式：`subscriptions.json` 或個別 Podcast 的 `.md` 檔案
+  - [ ] Podcast 訂閱資料管理（CRUD）
+  - [ ] 資料遷移機制（版本升級）
+  - [ ] 自動備份機制
   - [ ] 單元測試（SubscriptionStore.test.ts）
+
 - [ ] ProgressStore.ts - 播放進度儲存
+  - [ ] 儲存格式：`progress.json` 或 `progress/[podcast-id].json`
   - [ ] Episode 播放進度記錄
-  - [ ] 歷史記錄管理
+  - [ ] 歷史記錄管理（保留最近 N 天）
+  - [ ] 進度清理策略
   - [ ] 單元測試（ProgressStore.test.ts）
+
 - [ ] SettingsStore.ts - 設定儲存
+  - [ ] 儲存格式：`settings.json`
   - [ ] 全域設定管理
-  - [ ] Podcast 個別設定
-  - [ ] 設定匯入/匯出
+  - [ ] Podcast 個別設定（覆寫全域設定）
+  - [ ] 設定匯入/匯出（JSON/YAML）
+  - [ ] 設定驗證與預設值
   - [ ] 單元測試（SettingsStore.test.ts）
-- [ ] LocalCache.ts - 本地快取
-  - [ ] Feed 快取
-  - [ ] 圖片快取
-  - [ ] 快取清理策略
-  - [ ] 單元測試（LocalCache.test.ts）
+
+- [ ] CacheStore.ts - 本地快取儲存
+  - [ ] 儲存格式：`cache/` 資料夾，各類型資料分別儲存
+  - [ ] Feed 快取（`cache/feeds/[feed-id].json`）
+  - [ ] 圖片快取（`cache/images/[hash].jpg`）
+  - [ ] 快取過期策略（基於時間戳）
+  - [ ] 快取清理與大小限制
+  - [ ] 單元測試（CacheStore.test.ts）
+
+- [ ] DataPathManager.ts - 資料路徑管理
+  - [ ] 可設定的資料夾路徑
+  - [ ] 自動建立必要的子目錄結構
+  - [ ] 路徑驗證與權限檢查
+  - [ ] 單元測試（DataPathManager.test.ts）
+
+### 資料夾結構設計
+```
+.obsidian/plugins/podcast-player/data/
+├── settings.json              # 全域設定
+├── subscriptions.json         # 訂閱列表（或用 subscriptions/ 資料夾）
+├── progress.json              # 播放進度（或用 progress/ 資料夾）
+├── playlists/                 # 播放清單
+│   ├── [playlist-id].json
+│   └── ...
+├── queues/                    # 播放佇列
+│   ├── [queue-id].json
+│   └── ...
+├── cache/                     # 快取資料
+│   ├── feeds/                 # Feed 快取
+│   │   └── [feed-hash].json
+│   └── images/                # 圖片快取
+│       └── [image-hash].jpg
+└── backups/                   # 自動備份
+    └── [timestamp]/
+```
 
 ---
 

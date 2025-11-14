@@ -12,7 +12,7 @@
   - `playlist/` - 播放清單管理
   - `queue/` - 播放佇列管理
   - `model/` - 資料模型定義（Podcast、Episode、Playlist 等）
-  - `storage/` - 資料持久化（訂閱、播放進度、設定）
+  - `storage/` - 資料持久化（使用可設定資料夾中的檔案儲存）
   - `markdown/` - Markdown 整合與筆記匯出
   - `types/` - TypeScript 類型定義
   - `ui/` - 使用者介面組件（播放器、列表、設定）
@@ -51,6 +51,26 @@
 - 單一職責：每個檔案/模組只做一件事
 - 高內聚低耦合：相關功能集中，模組間依賴最小
 - 分層清晰：UI → Service → Storage → Model
+
+## 資料儲存策略
+- **儲存位置**：可設定的資料夾（預設 `.obsidian/plugins/podcast-player/data/`）
+- **檔案格式**：JSON（主要）、YAML（設定）、Markdown（可選）
+- **資料夾結構**：
+  ```
+  .obsidian/plugins/podcast-player/data/
+  ├── settings.json              # 全域設定
+  ├── subscriptions.json         # 訂閱列表
+  ├── progress.json              # 播放進度
+  ├── playlists/                 # 播放清單
+  ├── queues/                    # 播放佇列
+  ├── cache/                     # 快取資料
+  └── backups/                   # 自動備份
+  ```
+- **優點**：
+  - 使用者可以直接查看和編輯資料檔案
+  - 方便版本控制和備份
+  - 易於匯入/匯出
+  - 符合 Obsidian 生態系統慣例
 
 ## 新增功能時的正確流程
 1. 確定功能所屬模組

@@ -12,6 +12,7 @@ import type PodcastPlayerPlugin from '../../main';
 import { Podcast, Episode } from '../model';
 import { AddToQueueModal } from './AddToQueueModal';
 import { AddToPlaylistModal } from './AddToPlaylistModal';
+import { SubscribePodcastModal } from './SubscribePodcastModal';
 
 export const PODCAST_SIDEBAR_VIEW_TYPE = 'podcast-sidebar-view';
 
@@ -292,9 +293,16 @@ export class PodcastSidebarView extends ItemView {
 	 * Handle add podcast button click
 	 */
 	private async handleAddPodcast(): Promise<void> {
-		// Placeholder - will show a modal to add feed URL
-		console.log('Add podcast clicked');
-		// TODO: Show modal for RSS feed URL input
+		new SubscribePodcastModal(
+			this.app,
+			this.plugin,
+			async (podcastId) => {
+				// Callback after successful subscription
+				console.log(`Successfully subscribed to podcast: ${podcastId}`);
+				// Refresh the view to show the new podcast
+				await this.render();
+			}
+		).open();
 	}
 
 	/**

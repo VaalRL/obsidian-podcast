@@ -13,7 +13,8 @@ import {
 	PlayerView,
 	PLAYER_VIEW_TYPE,
 	PodcastSidebarView,
-	PODCAST_SIDEBAR_VIEW_TYPE
+	PODCAST_SIDEBAR_VIEW_TYPE,
+	SubscribePodcastModal
 } from './src/ui';
 import { PlaylistStore, PlaylistManager } from './src/playlist';
 import { QueueStore, QueueManager } from './src/queue';
@@ -148,7 +149,16 @@ export default class PodcastPlayerPlugin extends Plugin {
 			id: 'subscribe-to-podcast',
 			name: 'Subscribe to Podcast',
 			callback: () => {
-				new Notice('Subscribe to Podcast - Coming Soon!');
+				new SubscribePodcastModal(
+					this.app,
+					this,
+					async (podcastId) => {
+						// Callback after successful subscription
+						logger.info(`Successfully subscribed to podcast: ${podcastId}`);
+						// Activate sidebar to show the new podcast
+						await this.activateSidebarView();
+					}
+				).open();
 			}
 		});
 

@@ -1,0 +1,192 @@
+{
+  "main": {
+    "id": "1c174099cad609b9",
+    "type": "split",
+    "children": [
+      {
+        "id": "996f026db21f5e83",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "29f33d275487d401",
+            "type": "leaf",
+            "state": {
+              "type": "email-detail-view",
+              "state": {},
+              "icon": "mail-open",
+              "title": "郵件"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "4f246f99824d5369",
+    "type": "split",
+    "children": [
+      {
+        "id": "30fd1e10033c3cc6",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "55b6a77ba542dccf",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "檔案瀏覽器"
+            }
+          },
+          {
+            "id": "5441bf6dcf033126",
+            "type": "leaf",
+            "state": {
+              "type": "email-list-view",
+              "state": {},
+              "icon": "mail",
+              "title": "郵件收件匣"
+            }
+          },
+          {
+            "id": "c14e493fc5ba0633",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜尋"
+            }
+          },
+          {
+            "id": "fd1d2b5877e1063e",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "書籤"
+            }
+          },
+          {
+            "id": "058bd8235e5df970",
+            "type": "leaf",
+            "state": {
+              "type": "mailbox-view",
+              "state": {},
+              "icon": "folder",
+              "title": "mailbox.title"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "horizontal",
+    "width": 381.5
+  },
+  "right": {
+    "id": "23f14e277cfb4a57",
+    "type": "split",
+    "children": [
+      {
+        "id": "2e0bab339970c9e8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7cba23700d070c14",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "反向連結"
+            }
+          },
+          {
+            "id": "6175844311db51e7",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "對外連結"
+            }
+          },
+          {
+            "id": "d3c836ea47d83d98",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "標籤"
+            }
+          },
+          {
+            "id": "90346e249feaf718",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "大綱"
+            }
+          }
+        ],
+        "currentTab": 3
+      }
+    ],
+    "direction": "horizontal",
+    "width": 431.5
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "bases:建立新的 base": false,
+      "switcher:開啟快速切換": false,
+      "graph:查看關聯圖": false,
+      "canvas:建立新畫布": false,
+      "daily-notes:開啟今天的每日筆記": false,
+      "templates:插入模板": false,
+      "command-palette:開啟命令面板": false,
+      "obsidian-email-client:Open Email Client": false
+    }
+  },
+  "active": "5441bf6dcf033126",
+  "lastOpenFiles": [
+    "尚未完成.md",
+    "未命名.md"
+  ]
+}

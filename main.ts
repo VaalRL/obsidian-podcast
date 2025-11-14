@@ -1,6 +1,13 @@
 import { Plugin, Notice, WorkspaceLeaf } from 'obsidian';
 import { PluginSettings, DEFAULT_SETTINGS } from './src/model';
-import { SettingsStore, DataPathManager } from './src/storage';
+import {
+	SettingsStore,
+	DataPathManager,
+	SubscriptionStore,
+	ProgressStore,
+	FeedCacheStore,
+	ImageCacheStore
+} from './src/storage';
 import {
 	PodcastPlayerSettingTab,
 	PlayerView,
@@ -8,6 +15,11 @@ import {
 	PodcastSidebarView,
 	PODCAST_SIDEBAR_VIEW_TYPE
 } from './src/ui';
+import { PlaylistStore, PlaylistManager } from './src/playlist';
+import { QueueStore, QueueManager } from './src/queue';
+import { FeedService, FeedSyncManager } from './src/feed';
+import { PodcastService, EpisodeManager } from './src/podcast';
+import { PlaybackEngine, ProgressTracker, PlayerController } from './src/player';
 import { logger } from './src/utils/Logger';
 
 /**
@@ -21,8 +33,33 @@ import { logger } from './src/utils/Logger';
  */
 export default class PodcastPlayerPlugin extends Plugin {
 	settings: PluginSettings;
-	private settingsStore: SettingsStore;
+
+	// Core infrastructure
 	private pathManager: DataPathManager;
+	private settingsStore: SettingsStore;
+
+	// Storage layer
+	private subscriptionStore: SubscriptionStore;
+	private progressStore: ProgressStore;
+	private playlistStore: PlaylistStore;
+	private queueStore: QueueStore;
+	private feedCacheStore: FeedCacheStore;
+	private imageCacheStore: ImageCacheStore;
+
+	// Service layer
+	private feedService: FeedService;
+	private podcastService: PodcastService;
+	private episodeManager: EpisodeManager;
+	private feedSyncManager: FeedSyncManager;
+
+	// Management layer
+	private playlistManager: PlaylistManager;
+	private queueManager: QueueManager;
+
+	// Player layer
+	private playbackEngine: PlaybackEngine;
+	private progressTracker: ProgressTracker;
+	playerController: PlayerController; // Public for UI access
 
 	/**
 	 * Plugin lifecycle: Called when the plugin is loaded
@@ -36,6 +73,40 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		// Load settings
 		await this.loadSettings();
+
+		// Ensure data directories exist
+		await this.pathManager.ensureDirectories();
+
+		// Initialize storage layer
+		this.subscriptionStore = new SubscriptionStore(this.app.vault, this.pathManager);
+		this.progressStore = new ProgressStore(this.app.vault, this.pathManager);
+		this.playlistStore = new PlaylistStore(this.app.vault, this.pathManager);
+		this.queueStore = new QueueStore(this.app.vault, this.pathManager);
+		this.feedCacheStore = new FeedCacheStore(this.app.vault, this.pathManager);
+		this.imageCacheStore = new ImageCacheStore(this.app.vault, this.pathManager);
+
+		// Initialize service layer
+		this.feedService = new FeedService(this.feedCacheStore);
+		this.podcastService = new PodcastService(
+			this.feedService,
+			this.subscriptionStore,
+			this.imageCacheStore
+		);
+		this.episodeManager = new EpisodeManager(this.progressStore, this.subscriptionStore);
+		this.feedSyncManager = new FeedSyncManager(
+			this.feedService,
+			this.subscriptionStore,
+			this.settings.feedUpdateInterval * 60 * 1000 // Convert minutes to milliseconds
+		);
+
+		// Initialize management layer
+		this.playlistManager = new PlaylistManager(this.playlistStore);
+		this.queueManager = new QueueManager(this.queueStore);
+
+		// Initialize player layer
+		this.playbackEngine = new PlaybackEngine();
+		this.progressTracker = new ProgressTracker(this.progressStore);
+		this.playerController = new PlayerController(this.playbackEngine, this.progressTracker);
 
 		// Register view types
 		this.registerView(
@@ -89,6 +160,16 @@ export default class PodcastPlayerPlugin extends Plugin {
 	 */
 	onunload() {
 		logger.info('Unloading Podcast Player plugin');
+
+		// Stop feed sync manager
+		if (this.feedSyncManager) {
+			this.feedSyncManager.stopAutoSync();
+		}
+
+		// Stop player
+		if (this.playerController) {
+			this.playerController.stop();
+		}
 
 		// Detach all our custom views
 		this.app.workspace.detachLeavesOfType(PLAYER_VIEW_TYPE);
@@ -219,5 +300,47 @@ export default class PodcastPlayerPlugin extends Plugin {
 		}
 
 		logger.methodExit('PodcastPlayerPlugin', 'activateSidebarView');
+	}
+
+	/**
+	 * Get the subscription store (for UI components)
+	 */
+	getSubscriptionStore(): SubscriptionStore {
+		return this.subscriptionStore;
+	}
+
+	/**
+	 * Get the podcast service (for UI components)
+	 */
+	getPodcastService(): PodcastService {
+		return this.podcastService;
+	}
+
+	/**
+	 * Get the episode manager (for UI components)
+	 */
+	getEpisodeManager(): EpisodeManager {
+		return this.episodeManager;
+	}
+
+	/**
+	 * Get the playlist manager (for UI components)
+	 */
+	getPlaylistManager(): PlaylistManager {
+		return this.playlistManager;
+	}
+
+	/**
+	 * Get the queue manager (for UI components)
+	 */
+	getQueueManager(): QueueManager {
+		return this.queueManager;
+	}
+
+	/**
+	 * Get the feed sync manager (for UI components)
+	 */
+	getFeedSyncManager(): FeedSyncManager {
+		return this.feedSyncManager;
 	}
 }

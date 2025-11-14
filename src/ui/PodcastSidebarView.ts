@@ -7,7 +7,7 @@
  * - Quick playback controls
  */
 
-import { ItemView, WorkspaceLeaf, Menu } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Menu, Notice } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Podcast, Episode } from '../model';
 
@@ -145,8 +145,8 @@ export class PodcastSidebarView extends ItemView {
 	private async renderPodcastList(): Promise<void> {
 		const listContainer = this.sidebarContentEl.createDiv({ cls: 'podcast-list-container' });
 
-		// Placeholder - will integrate with SubscriptionStore later
-		const podcasts: Podcast[] = []; // await this.loadPodcasts();
+		// Load podcasts from store
+		const podcasts = await this.loadPodcasts();
 
 		if (podcasts.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'empty-state' });
@@ -299,9 +299,23 @@ export class PodcastSidebarView extends ItemView {
 	 * Handle refresh feeds button click
 	 */
 	private async handleRefreshFeeds(): Promise<void> {
-		// Placeholder - will integrate with FeedManager
-		console.log('Refresh feeds clicked');
-		// TODO: Refresh all podcast feeds
+		try {
+			const feedSyncManager = this.plugin.getFeedSyncManager();
+			// Show progress notification
+			const notice = new Notice('Refreshing feeds...', 0);
+
+			const result = await feedSyncManager.syncAll();
+
+			notice.hide();
+
+			new Notice(`Refreshed ${result.successCount} feeds. ${result.failureCount} failed.`);
+
+			// Refresh the view to show updated data
+			await this.render();
+		} catch (error) {
+			console.error('Failed to refresh feeds:', error);
+			new Notice('Failed to refresh feeds');
+		}
 	}
 
 	/**
@@ -316,10 +330,18 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Handle play episode button click
 	 */
-	private handlePlayEpisode(episode: Episode): void {
-		// Placeholder - will integrate with PlayerController
-		console.log('Play episode:', episode.title);
-		// TODO: Start playback
+	private async handlePlayEpisode(episode: Episode): Promise<void> {
+		try {
+			const playerController = this.plugin.playerController;
+
+			// Load the episode into the player with autoPlay = true
+			await playerController.loadEpisode(episode, true, true);
+
+			new Notice(`Now playing: ${episode.title}`);
+		} catch (error) {
+			console.error('Failed to play episode:', error);
+			new Notice('Failed to start playback');
+		}
 	}
 
 	/**
@@ -438,8 +460,13 @@ export class PodcastSidebarView extends ItemView {
 	 * Load podcasts from store
 	 */
 	private async loadPodcasts(): Promise<Podcast[]> {
-		// Placeholder - will integrate with SubscriptionStore
-		return [];
+		try {
+			const subscriptionStore = this.plugin.getSubscriptionStore();
+			return await subscriptionStore.getAllPodcasts();
+		} catch (error) {
+			console.error('Failed to load podcasts:', error);
+			return [];
+		}
 	}
 
 	/**

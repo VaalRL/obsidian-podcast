@@ -14,6 +14,8 @@ import {
 	PLAYER_VIEW_TYPE,
 	PodcastSidebarView,
 	PODCAST_SIDEBAR_VIEW_TYPE,
+	PlaylistQueueView,
+	PLAYLIST_QUEUE_VIEW_TYPE,
 	SubscribePodcastModal
 } from './src/ui';
 import { PlaylistStore, PlaylistManager } from './src/playlist';
@@ -120,6 +122,11 @@ export default class PodcastPlayerPlugin extends Plugin {
 			(leaf) => new PodcastSidebarView(leaf, this)
 		);
 
+		this.registerView(
+			PLAYLIST_QUEUE_VIEW_TYPE,
+			(leaf) => new PlaylistQueueView(leaf, this)
+		);
+
 		// Register settings tab
 		this.addSettingTab(new PodcastPlayerSettingTab(this.app, this));
 
@@ -162,6 +169,14 @@ export default class PodcastPlayerPlugin extends Plugin {
 			}
 		});
 
+		this.addCommand({
+			id: 'open-playlist-queue',
+			name: 'Open Playlists & Queues',
+			callback: async () => {
+				await this.activatePlaylistQueueView();
+			}
+		});
+
 		logger.info('Podcast Player plugin loaded successfully');
 	}
 
@@ -184,6 +199,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 		// Detach all our custom views
 		this.app.workspace.detachLeavesOfType(PLAYER_VIEW_TYPE);
 		this.app.workspace.detachLeavesOfType(PODCAST_SIDEBAR_VIEW_TYPE);
+		this.app.workspace.detachLeavesOfType(PLAYLIST_QUEUE_VIEW_TYPE);
 	}
 
 	/**
@@ -352,5 +368,39 @@ export default class PodcastPlayerPlugin extends Plugin {
 	 */
 	getFeedSyncManager(): FeedSyncManager {
 		return this.feedSyncManager;
+	}
+
+	/**
+	 * Activate the playlist/queue view
+	 */
+	async activatePlaylistQueueView() {
+		logger.methodEntry('PodcastPlayerPlugin', 'activatePlaylistQueueView');
+
+		const { workspace } = this.app;
+
+		// Check if view is already open
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(PLAYLIST_QUEUE_VIEW_TYPE);
+
+		if (leaves.length > 0) {
+			// View already exists, reveal it
+			leaf = leaves[0];
+		} else {
+			// Create new view in right sidebar
+			leaf = workspace.getRightLeaf(false);
+			if (leaf) {
+				await leaf.setViewState({
+					type: PLAYLIST_QUEUE_VIEW_TYPE,
+					active: true
+				});
+			}
+		}
+
+		// Reveal the leaf
+		if (leaf) {
+			workspace.revealLeaf(leaf);
+		}
+
+		logger.methodExit('PodcastPlayerPlugin', 'activatePlaylistQueueView');
 	}
 }

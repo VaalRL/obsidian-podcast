@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Test Vault - 忽略使用者資料，保留結構
+Test Vault/.obsidian/workspace.json
+Test Vault/.obsidian/workspace-mobile.json
+Test Vault/.obsidian/hotkeys.json
+Test Vault/.obsidian/graph.json
+Test Vault/.obsidian/plugins/*/data/
+Test Vault/**/*.md
+!Test Vault/README.md
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.swp

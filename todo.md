@@ -15,13 +15,22 @@
 - [x] 專案規範文件更新（CLAUDE.md, gemini.md, agents.md）
 - [x] 開發指南文件更新（claude/ 和 gemini/ 目錄）
 - [x] 專案架構規劃與模組定義
+- [x] 資料持久化策略定義（檔案系統儲存）
 
 ### 🔄 進行中
+- [ ] Test Vault 開發環境設定
+  - [ ] 建立 `Test Vault/.obsidian/plugins/podcast-player/` 目錄
+  - [ ] 設定符號連結或構建腳本，將編譯輸出導向 Test Vault
+  - [ ] 設定熱重載（開發模式）
+  - [ ] 建立測試用的 Podcast 資料與範例筆記
+
 - [ ] 基礎專案設定
-  - [ ] 更新 manifest.json（插件資訊）
-  - [ ] 更新 package.json（依賴與腳本）
-  - [ ] 設定 TypeScript 配置
+  - [ ] 建立 manifest.json（插件資訊）
+  - [ ] 建立 package.json（依賴與腳本）
+  - [ ] 設定 TypeScript 配置（tsconfig.json）
+  - [ ] 設定 esbuild 構建配置（輸出到 Test Vault）
   - [ ] 設定測試環境（Jest）
+  - [ ] 建立基礎 main.ts（插件入口）
 
 ### 📝 待辦
 - [ ] 建立核心資料模型（src/model/）
@@ -374,11 +383,18 @@
 - ✅ **修正優先**：優先修正現有組件，而非新建
 - ✅ **單一真實來源**：避免重複實作
 - ✅ **檔案規範**：不在 root 新增非必要檔案
+- ✅ **Test Vault 開發**：所有實作直接在 Test Vault 中開發與測試
+
+### 開發流程
+1. **開發環境**：使用 `Test Vault` 作為實際開發與測試環境
+2. **即時測試**：編譯輸出直接到 `Test Vault/.obsidian/plugins/podcast-player/`
+3. **快速迭代**：修改程式碼 → 自動編譯 → Obsidian 重載 → 測試
+4. **真實場景**：使用真實的 Podcast Feed 和筆記進行測試
 
 ### 技術堆疊
 - TypeScript
 - Obsidian Plugin API
-- esbuild（構建）
+- esbuild（構建，輸出到 Test Vault）
 - Jest（測試）
 - rss-parser（Feed 解析）
 - HTML5 Audio API（播放器）

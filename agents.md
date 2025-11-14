@@ -4,6 +4,8 @@
 
 ## 快速路由（你要做什麼？）
 
+- **首次設定開發環境** → 讀《00_開發環境設定》
+
 - **準備開始任何任務** → 讀《01_前置檢查清單》與《03_搜尋優先與架構定位》  
 - **撰寫或修改功能** → 讀《04_程式品質與測試（TDD）》＋《03_搜尋優先與架構定位》＋《05_檔案與目錄規範》  
 - **長時間或多步驟任務**（>30 秒或 ≥3 步）→ 讀《02_TodoWrite 與 Task Agents》  
@@ -15,6 +17,7 @@
 - **修復問題而非重建** → 讀《10_修正優先開發原則》
 
 ## 目錄
+0. [00_開發環境設定_Development_Setup.md](./agents/00_開發環境設定_Development_Setup.md)
 1. [01_前置檢查清單_Preflight-Checklist.md](./claude/01_前置檢查清單_Preflight-Checklist.md)
 2. [02_任務執行_TodoWrite_與_TaskAgents.md](./claude/02_任務執行_TodoWrite_與_TaskAgents.md)
 3. [03_搜尋優先與架構定位_SearchFirst_Architecture.md](./claude/03_搜尋優先與架構定位_SearchFirst_Architecture.md)

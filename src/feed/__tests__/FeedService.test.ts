@@ -111,6 +111,8 @@ describe('FeedService', () => {
 				status: 200,
 				text: sampleRSSFeed,
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			const result = await service.fetchFeed('https://example.com/feed.rss');
@@ -126,6 +128,8 @@ describe('FeedService', () => {
 				status: 200,
 				text: sampleAtomFeed,
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			const result = await service.fetchFeed('https://example.com/feed.atom');
@@ -138,10 +142,10 @@ describe('FeedService', () => {
 
 		it('should use cached feed if available', async () => {
 			mockCacheStore.getCacheEntry.mockResolvedValue({
-				key: 'https://example.com/feed.rss',
+				url: 'https://example.com/feed.rss',
 				data: sampleRSSFeed,
-				timestamp: Date.now(),
-				expiresAt: Date.now() + 3600000,
+				cachedAt: new Date(Date.now()),
+				expiresAt: new Date(Date.now() + 3600000),
 			});
 
 			const result = await service.fetchFeed('https://example.com/feed.rss', {
@@ -155,16 +159,18 @@ describe('FeedService', () => {
 
 		it('should bypass cache when useCache is false', async () => {
 			mockCacheStore.getCacheEntry.mockResolvedValue({
-				key: 'https://example.com/feed.rss',
+				url: 'https://example.com/feed.rss',
 				data: sampleRSSFeed,
-				timestamp: Date.now(),
-				expiresAt: Date.now() + 3600000,
+				cachedAt: new Date(Date.now()),
+				expiresAt: new Date(Date.now() + 3600000),
 			});
 
 			mockRequestUrl.mockResolvedValue({
 				status: 200,
 				text: sampleRSSFeed,
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			await service.fetchFeed('https://example.com/feed.rss', {
@@ -183,6 +189,8 @@ describe('FeedService', () => {
 					etag: '"12345"',
 					'last-modified': 'Mon, 01 Jan 2024 10:00:00 GMT',
 				},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			await service.fetchFeed('https://example.com/feed.rss');
@@ -203,6 +211,8 @@ describe('FeedService', () => {
 				status: 404,
 				text: 'Not Found',
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			await expect(
@@ -215,6 +225,8 @@ describe('FeedService', () => {
 				status: 200,
 				text: sampleRSSFeed,
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			await service.fetchFeed('https://example.com/feed.rss', {
@@ -244,6 +256,8 @@ describe('FeedService', () => {
 				status: 200,
 				text: unknownFeed,
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			const result = await service.fetchFeed('https://example.com/feed');
@@ -284,6 +298,8 @@ describe('FeedService', () => {
 				status: 200,
 				text: feedWithNewEpisode,
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			const result = await service.updateFeed(podcast);
@@ -309,6 +325,8 @@ describe('FeedService', () => {
 				status: 200,
 				text: sampleRSSFeed,
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			await service.updateFeed(podcast);
@@ -388,6 +406,8 @@ describe('FeedService', () => {
 				status: 200,
 				text: sampleRSSFeed,
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			await serviceWithoutCache.fetchFeed('https://example.com/feed.rss');
@@ -402,6 +422,8 @@ describe('FeedService', () => {
 				status: 200,
 				text: sampleRSSFeed,
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			const result = await service.fetchFeed('https://example.com/feed.rss');
@@ -417,6 +439,8 @@ describe('FeedService', () => {
 				status: 200,
 				text: sampleRSSFeed,
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			const result = await service.fetchFeed('https://example.com/feed.rss');
@@ -452,6 +476,8 @@ describe('FeedService', () => {
 				status: 200,
 				text: 'not valid xml',
 				headers: {},
+			arrayBuffer: new ArrayBuffer(0),
+			json: {},
 			});
 
 			await expect(

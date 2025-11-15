@@ -331,7 +331,7 @@ describe('SubscriptionStore', () => {
 			const settings = {
 				playbackSpeed: 1.5,
 				volume: 0.8,
-				skipIntro: 30,
+				skipIntroSeconds: 30,
 			};
 
 			await store.updatePodcastSettings('podcast-1', settings);
@@ -343,7 +343,7 @@ describe('SubscriptionStore', () => {
 		it('should clear settings when undefined is passed', async () => {
 			const podcastWithSettings = {
 				...samplePodcast1,
-				settings: { playbackSpeed: 1.5 },
+				settings: { playbackSpeed: 1.5, volume: 1.0, skipIntroSeconds: 0 },
 			};
 			await store.addPodcast(podcastWithSettings);
 
@@ -355,7 +355,7 @@ describe('SubscriptionStore', () => {
 
 		it('should throw error if podcast not found', async () => {
 			await expect(
-				store.updatePodcastSettings('nonexistent', { playbackSpeed: 1.0 })
+				store.updatePodcastSettings('nonexistent', { playbackSpeed: 1.0, volume: 1.0, skipIntroSeconds: 0 })
 			).rejects.toThrow(StorageError);
 		});
 	});

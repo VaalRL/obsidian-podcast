@@ -321,7 +321,7 @@ describe('PodcastService', () => {
 		const settings: PodcastSettings = {
 			playbackSpeed: 1.5,
 			volume: 0.8,
-			skipIntro: 30,
+			skipIntroSeconds: 30,
 		};
 
 		it('should update podcast settings', async () => {
@@ -455,7 +455,7 @@ describe('PodcastService', () => {
 
 	describe('import/export', () => {
 		it('should export subscriptions', async () => {
-			const exportData = { podcasts: [samplePodcast] };
+			const exportData = { podcasts: [samplePodcast], version: 1 };
 			mockSubscriptionStore.exportSubscriptions.mockResolvedValue(exportData);
 
 			const result = await service.exportSubscriptions();

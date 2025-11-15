@@ -190,8 +190,9 @@ describe('AtomParser', () => {
 
 			expect(result.podcast.subscribedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
 			expect(result.podcast.subscribedAt.getTime()).toBeLessThanOrEqual(after.getTime());
-			expect(result.podcast.lastFetchedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
-			expect(result.podcast.lastFetchedAt.getTime()).toBeLessThanOrEqual(after.getTime());
+			expect(result.podcast.lastFetchedAt).toBeDefined();
+			expect(result.podcast.lastFetchedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime());
+			expect(result.podcast.lastFetchedAt!.getTime()).toBeLessThanOrEqual(after.getTime());
 		});
 	});
 

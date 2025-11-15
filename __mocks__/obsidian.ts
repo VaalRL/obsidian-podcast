@@ -22,7 +22,7 @@ export class MockVault {
 		this.files.delete(file.path);
 	}
 
-	async adapter = {
+	adapter = {
 		exists: jest.fn().mockResolvedValue(true),
 		read: jest.fn().mockResolvedValue('{}'),
 		write: jest.fn().mockResolvedValue(undefined),

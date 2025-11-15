@@ -200,7 +200,7 @@ describe('NoteExporter', () => {
 		});
 
 		it('should create folder if it does not exist', async () => {
-			mockVault.adapter.exists.mockResolvedValue(false);
+			(mockVault.adapter.exists as jest.Mock).mockResolvedValue(false);
 
 			await exporter.exportEpisode(sampleEpisode, samplePodcast);
 
@@ -208,7 +208,7 @@ describe('NoteExporter', () => {
 		});
 
 		it('should not create folder if it exists', async () => {
-			mockVault.adapter.exists.mockResolvedValue(true);
+			(mockVault.adapter.exists as jest.Mock).mockResolvedValue(true);
 
 			await exporter.exportEpisode(sampleEpisode, samplePodcast);
 

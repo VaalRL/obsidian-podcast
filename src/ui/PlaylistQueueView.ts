@@ -28,6 +28,8 @@ export class PlaylistQueueView extends ItemView {
 	private selectedPlaylist: Playlist | null = null;
 	private selectedQueue: Queue | null = null;
 	private searchQuery: string = '';
+	private sortBy: 'name' | 'date' | 'count' = 'date';
+	private sortDirection: 'asc' | 'desc' = 'desc';
 
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
 		super(leaf);
@@ -84,9 +86,10 @@ export class PlaylistQueueView extends ItemView {
 		// Header with mode toggle
 		this.renderHeader();
 
-		// Search box (only for list view, not details)
+		// Search box and sort options (only for list view, not details)
 		if (!this.selectedPlaylist && !this.selectedQueue) {
 			this.renderSearchBox();
+			this.renderSortOptions();
 		}
 
 		// Content based on current selection
@@ -132,6 +135,40 @@ export class PlaylistQueueView extends ItemView {
 				this.render();
 			});
 		}
+	}
+
+	/**
+	 * Render the sort options
+	 */
+	private renderSortOptions(): void {
+		const sortContainer = this.pqContentEl.createDiv({ cls: 'pq-sort-container' });
+
+		// Sort by dropdown
+		const sortByLabel = sortContainer.createSpan({ text: 'Sort: ', cls: 'sort-label' });
+
+		const sortBySelect = sortContainer.createEl('select', { cls: 'sort-select' });
+
+		const nameOption = sortBySelect.createEl('option', { value: 'name', text: 'Name' });
+		const dateOption = sortBySelect.createEl('option', { value: 'date', text: 'Date' });
+		const countOption = sortBySelect.createEl('option', { value: 'count', text: 'Episode Count' });
+
+		sortBySelect.value = this.sortBy;
+
+		sortBySelect.addEventListener('change', (e) => {
+			this.sortBy = (e.target as HTMLSelectElement).value as 'name' | 'date' | 'count';
+			this.render();
+		});
+
+		// Sort direction toggle
+		const directionBtn = sortContainer.createEl('button', {
+			cls: 'sort-direction-button',
+			attr: { 'aria-label': 'Toggle sort direction' }
+		});
+		directionBtn.innerHTML = this.sortDirection === 'asc' ? '↑' : '↓';
+		directionBtn.addEventListener('click', () => {
+			this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+			this.render();
+		});
 	}
 
 	/**
@@ -217,6 +254,9 @@ export class PlaylistQueueView extends ItemView {
 			playlists = this.filterPlaylists(playlists, this.searchQuery);
 		}
 
+		// Sort playlists
+		playlists = this.sortPlaylists(playlists, this.sortBy, this.sortDirection);
+
 		if (playlists.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'pq-empty-state' });
 			if (this.searchQuery) {
@@ -285,6 +325,9 @@ export class PlaylistQueueView extends ItemView {
 		if (this.searchQuery) {
 			queues = this.filterQueues(queues, this.searchQuery);
 		}
+
+		// Sort queues
+		queues = this.sortQueues(queues, this.sortBy, this.sortDirection);
 
 		if (queues.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'pq-empty-state' });
@@ -760,6 +803,68 @@ export class PlaylistQueueView extends ItemView {
 			}
 			return false;
 		});
+	}
+
+	/**
+	 * Sort playlists based on criteria
+	 */
+	private sortPlaylists(
+		playlists: Playlist[],
+		sortBy: 'name' | 'date' | 'count',
+		direction: 'asc' | 'desc'
+	): Playlist[] {
+		const sorted = [...playlists].sort((a, b) => {
+			let comparison = 0;
+
+			switch (sortBy) {
+				case 'name':
+					comparison = a.name.localeCompare(b.name);
+					break;
+				case 'date':
+					const aDate = new Date(a.createdAt).getTime();
+					const bDate = new Date(b.createdAt).getTime();
+					comparison = aDate - bDate;
+					break;
+				case 'count':
+					comparison = a.episodeIds.length - b.episodeIds.length;
+					break;
+			}
+
+			return direction === 'asc' ? comparison : -comparison;
+		});
+
+		return sorted;
+	}
+
+	/**
+	 * Sort queues based on criteria
+	 */
+	private sortQueues(
+		queues: Queue[],
+		sortBy: 'name' | 'date' | 'count',
+		direction: 'asc' | 'desc'
+	): Queue[] {
+		const sorted = [...queues].sort((a, b) => {
+			let comparison = 0;
+
+			switch (sortBy) {
+				case 'name':
+					comparison = a.name.localeCompare(b.name);
+					break;
+				case 'date':
+					const aDate = new Date(a.createdAt).getTime();
+					const bDate = new Date(b.createdAt).getTime();
+					comparison = aDate - bDate;
+					break;
+				case 'count':
+					comparison = a.episodeIds.length - b.episodeIds.length;
+					break;
+			}
+
+			return direction === 'asc' ? comparison : -comparison;
+		});
+
+		return sorted;
 	}
 
 	/**

@@ -26,6 +26,9 @@ export class PodcastSidebarView extends ItemView {
 	private sidebarContentEl: HTMLElement;
 	private selectedPodcast: Podcast | null = null;
 	private searchQuery: string = '';
+	private podcastSortBy: 'title' | 'author' | 'date' = 'title';
+	private episodeSortBy: 'title' | 'date' | 'duration' = 'date';
+	private sortDirection: 'asc' | 'desc' = 'asc';
 
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
 		super(leaf);
@@ -85,6 +88,9 @@ export class PodcastSidebarView extends ItemView {
 		// Search box
 		this.renderSearchBox();
 
+		// Sort options
+		this.renderSortOptions();
+
 		// Podcast list or episode list
 		if (this.selectedPodcast) {
 			await this.renderEpisodeList();
@@ -124,6 +130,55 @@ export class PodcastSidebarView extends ItemView {
 				this.render();
 			});
 		}
+	}
+
+	/**
+	 * Render the sort options
+	 */
+	private renderSortOptions(): void {
+		const sortContainer = this.sidebarContentEl.createDiv({ cls: 'sidebar-sort-container' });
+
+		// Sort by dropdown
+		const sortByLabel = sortContainer.createSpan({ text: 'Sort: ', cls: 'sort-label' });
+
+		const sortBySelect = sortContainer.createEl('select', { cls: 'sort-select' });
+
+		if (this.selectedPodcast) {
+			// Episode sort options
+			const titleOption = sortBySelect.createEl('option', { value: 'title', text: 'Title' });
+			const dateOption = sortBySelect.createEl('option', { value: 'date', text: 'Date' });
+			const durationOption = sortBySelect.createEl('option', { value: 'duration', text: 'Duration' });
+
+			sortBySelect.value = this.episodeSortBy;
+
+			sortBySelect.addEventListener('change', (e) => {
+				this.episodeSortBy = (e.target as HTMLSelectElement).value as 'title' | 'date' | 'duration';
+				this.render();
+			});
+		} else {
+			// Podcast sort options
+			const titleOption = sortBySelect.createEl('option', { value: 'title', text: 'Title' });
+			const authorOption = sortBySelect.createEl('option', { value: 'author', text: 'Author' });
+			const dateOption = sortBySelect.createEl('option', { value: 'date', text: 'Subscribed Date' });
+
+			sortBySelect.value = this.podcastSortBy;
+
+			sortBySelect.addEventListener('change', (e) => {
+				this.podcastSortBy = (e.target as HTMLSelectElement).value as 'title' | 'author' | 'date';
+				this.render();
+			});
+		}
+
+		// Sort direction toggle
+		const directionBtn = sortContainer.createEl('button', {
+			cls: 'sort-direction-button',
+			attr: { 'aria-label': 'Toggle sort direction' }
+		});
+		directionBtn.innerHTML = this.sortDirection === 'asc' ? '↑' : '↓';
+		directionBtn.addEventListener('click', () => {
+			this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+			this.render();
+		});
 	}
 
 	/**
@@ -194,6 +249,9 @@ export class PodcastSidebarView extends ItemView {
 		if (this.searchQuery) {
 			podcasts = this.filterPodcasts(podcasts, this.searchQuery);
 		}
+
+		// Sort podcasts
+		podcasts = this.sortPodcasts(podcasts, this.podcastSortBy, this.sortDirection);
 
 		if (podcasts.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'empty-state' });
@@ -278,6 +336,9 @@ export class PodcastSidebarView extends ItemView {
 		if (this.searchQuery) {
 			episodes = this.filterEpisodes(episodes, this.searchQuery);
 		}
+
+		// Sort episodes
+		episodes = this.sortEpisodes(episodes, this.episodeSortBy, this.sortDirection);
 
 		if (episodes.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'empty-state' });
@@ -665,6 +726,68 @@ export class PodcastSidebarView extends ItemView {
 			}
 			return false;
 		});
+	}
+
+	/**
+	 * Sort podcasts based on criteria
+	 */
+	private sortPodcasts(
+		podcasts: Podcast[],
+		sortBy: 'title' | 'author' | 'date',
+		direction: 'asc' | 'desc'
+	): Podcast[] {
+		const sorted = [...podcasts].sort((a, b) => {
+			let comparison = 0;
+
+			switch (sortBy) {
+				case 'title':
+					comparison = a.title.localeCompare(b.title);
+					break;
+				case 'author':
+					comparison = (a.author || '').localeCompare(b.author || '');
+					break;
+				case 'date':
+					const aDate = new Date(a.subscribedAt).getTime();
+					const bDate = new Date(b.subscribedAt).getTime();
+					comparison = aDate - bDate;
+					break;
+			}
+
+			return direction === 'asc' ? comparison : -comparison;
+		});
+
+		return sorted;
+	}
+
+	/**
+	 * Sort episodes based on criteria
+	 */
+	private sortEpisodes(
+		episodes: Episode[],
+		sortBy: 'title' | 'date' | 'duration',
+		direction: 'asc' | 'desc'
+	): Episode[] {
+		const sorted = [...episodes].sort((a, b) => {
+			let comparison = 0;
+
+			switch (sortBy) {
+				case 'title':
+					comparison = a.title.localeCompare(b.title);
+					break;
+				case 'date':
+					const aDate = new Date(a.publishDate).getTime();
+					const bDate = new Date(b.publishDate).getTime();
+					comparison = aDate - bDate;
+					break;
+				case 'duration':
+					comparison = a.duration - b.duration;
+					break;
+			}
+
+			return direction === 'asc' ? comparison : -comparison;
+		});
+
+		return sorted;
 	}
 
 	/**

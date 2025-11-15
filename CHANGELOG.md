@@ -16,8 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - PlaylistManager (39 tests) - Playlist CRUD, episode management, search, merge/duplicate
   - ProgressStore (23 tests) - Progress tracking, statistics, import/export
   - PlayerController (37 tests) - Player control, episode loading, playback, seeking
+  - ProgressTracker (40 tests) - Progress tracking, periodic save, resume, completion
 - Jest testing infrastructure with Obsidian API mocks
-- Test coverage reporting (139 tests passing)
+- Test coverage reporting (179 tests passing)
+  - ProgressTracker: 95% coverage
   - PlaylistManager: 95% coverage
   - PlayerController: 85% coverage
   - ProgressStore: 84% coverage

@@ -27,6 +27,7 @@ export class PlaylistQueueView extends ItemView {
 	private viewMode: ViewMode = 'playlists';
 	private selectedPlaylist: Playlist | null = null;
 	private selectedQueue: Queue | null = null;
+	private searchQuery: string = '';
 
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
 		super(leaf);
@@ -83,6 +84,11 @@ export class PlaylistQueueView extends ItemView {
 		// Header with mode toggle
 		this.renderHeader();
 
+		// Search box (only for list view, not details)
+		if (!this.selectedPlaylist && !this.selectedQueue) {
+			this.renderSearchBox();
+		}
+
 		// Content based on current selection
 		if (this.selectedPlaylist) {
 			await this.renderPlaylistDetails();
@@ -92,6 +98,39 @@ export class PlaylistQueueView extends ItemView {
 			await this.renderPlaylistList();
 		} else {
 			await this.renderQueueList();
+		}
+	}
+
+	/**
+	 * Render the search box
+	 */
+	private renderSearchBox(): void {
+		const searchContainer = this.pqContentEl.createDiv({ cls: 'pq-search-container' });
+
+		const searchInput = searchContainer.createEl('input', {
+			type: 'text',
+			placeholder: `Search ${this.viewMode}...`,
+			cls: 'pq-search-input',
+			value: this.searchQuery
+		});
+
+		// Handle search input
+		searchInput.addEventListener('input', (e) => {
+			this.searchQuery = (e.target as HTMLInputElement).value;
+			this.render();
+		});
+
+		// Clear button (if there's a search query)
+		if (this.searchQuery) {
+			const clearBtn = searchContainer.createEl('button', {
+				cls: 'pq-search-clear',
+				attr: { 'aria-label': 'Clear search' }
+			});
+			clearBtn.innerHTML = '✕';
+			clearBtn.addEventListener('click', () => {
+				this.searchQuery = '';
+				this.render();
+			});
 		}
 	}
 
@@ -171,15 +210,28 @@ export class PlaylistQueueView extends ItemView {
 		const listContainer = this.pqContentEl.createDiv({ cls: 'pq-list-container' });
 
 		const playlistManager = this.plugin.getPlaylistManager();
-		const playlists = await playlistManager.getAllPlaylists();
+		let playlists = await playlistManager.getAllPlaylists();
+
+		// Filter playlists based on search query
+		if (this.searchQuery) {
+			playlists = this.filterPlaylists(playlists, this.searchQuery);
+		}
 
 		if (playlists.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'pq-empty-state' });
-			empty.createEl('p', { text: 'No playlists yet' });
-			empty.createEl('p', {
-				text: 'Click the + button to create a playlist',
-				cls: 'pq-empty-hint'
-			});
+			if (this.searchQuery) {
+				empty.createEl('p', { text: 'No playlists found' });
+				empty.createEl('p', {
+					text: `No playlists match "${this.searchQuery}"`,
+					cls: 'pq-empty-hint'
+				});
+			} else {
+				empty.createEl('p', { text: 'No playlists yet' });
+				empty.createEl('p', {
+					text: 'Click the + button to create a playlist',
+					cls: 'pq-empty-hint'
+				});
+			}
 			return;
 		}
 
@@ -227,15 +279,28 @@ export class PlaylistQueueView extends ItemView {
 		const listContainer = this.pqContentEl.createDiv({ cls: 'pq-list-container' });
 
 		const queueManager = this.plugin.getQueueManager();
-		const queues = await queueManager.getAllQueues();
+		let queues = await queueManager.getAllQueues();
+
+		// Filter queues based on search query
+		if (this.searchQuery) {
+			queues = this.filterQueues(queues, this.searchQuery);
+		}
 
 		if (queues.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'pq-empty-state' });
-			empty.createEl('p', { text: 'No queues yet' });
-			empty.createEl('p', {
-				text: 'Click the + button to create a queue',
-				cls: 'pq-empty-hint'
-			});
+			if (this.searchQuery) {
+				empty.createEl('p', { text: 'No queues found' });
+				empty.createEl('p', {
+					text: `No queues match "${this.searchQuery}"`,
+					cls: 'pq-empty-hint'
+				});
+			} else {
+				empty.createEl('p', { text: 'No queues yet' });
+				empty.createEl('p', {
+					text: 'Click the + button to create a queue',
+					cls: 'pq-empty-hint'
+				});
+			}
 			return;
 		}
 
@@ -663,6 +728,38 @@ export class PlaylistQueueView extends ItemView {
 			const months = Math.floor(diffDays / 30);
 			return `${months} month${months > 1 ? 's' : ''} ago`;
 		}
+	}
+
+	/**
+	 * Filter playlists based on search query
+	 */
+	private filterPlaylists(playlists: Playlist[], query: string): Playlist[] {
+		const lowerQuery = query.toLowerCase();
+		return playlists.filter(playlist => {
+			// Search in name
+			if (playlist.name.toLowerCase().includes(lowerQuery)) {
+				return true;
+			}
+			// Search in description
+			if (playlist.description?.toLowerCase().includes(lowerQuery)) {
+				return true;
+			}
+			return false;
+		});
+	}
+
+	/**
+	 * Filter queues based on search query
+	 */
+	private filterQueues(queues: Queue[], query: string): Queue[] {
+		const lowerQuery = query.toLowerCase();
+		return queues.filter(queue => {
+			// Search in name
+			if (queue.name.toLowerCase().includes(lowerQuery)) {
+				return true;
+			}
+			return false;
+		});
 	}
 
 	/**

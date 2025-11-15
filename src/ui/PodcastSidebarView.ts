@@ -25,6 +25,7 @@ export class PodcastSidebarView extends ItemView {
 	plugin: PodcastPlayerPlugin;
 	private sidebarContentEl: HTMLElement;
 	private selectedPodcast: Podcast | null = null;
+	private searchQuery: string = '';
 
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
 		super(leaf);
@@ -81,11 +82,47 @@ export class PodcastSidebarView extends ItemView {
 		// Header with actions
 		this.renderHeader();
 
+		// Search box
+		this.renderSearchBox();
+
 		// Podcast list or episode list
 		if (this.selectedPodcast) {
 			await this.renderEpisodeList();
 		} else {
 			await this.renderPodcastList();
+		}
+	}
+
+	/**
+	 * Render the search box
+	 */
+	private renderSearchBox(): void {
+		const searchContainer = this.sidebarContentEl.createDiv({ cls: 'sidebar-search-container' });
+
+		const searchInput = searchContainer.createEl('input', {
+			type: 'text',
+			placeholder: this.selectedPodcast ? 'Search episodes...' : 'Search podcasts...',
+			cls: 'sidebar-search-input',
+			value: this.searchQuery
+		});
+
+		// Handle search input
+		searchInput.addEventListener('input', (e) => {
+			this.searchQuery = (e.target as HTMLInputElement).value;
+			this.render();
+		});
+
+		// Clear button (if there's a search query)
+		if (this.searchQuery) {
+			const clearBtn = searchContainer.createEl('button', {
+				cls: 'sidebar-search-clear',
+				attr: { 'aria-label': 'Clear search' }
+			});
+			clearBtn.innerHTML = '✕';
+			clearBtn.addEventListener('click', () => {
+				this.searchQuery = '';
+				this.render();
+			});
 		}
 	}
 
@@ -151,15 +188,28 @@ export class PodcastSidebarView extends ItemView {
 		const listContainer = this.sidebarContentEl.createDiv({ cls: 'podcast-list-container' });
 
 		// Load podcasts from store
-		const podcasts = await this.loadPodcasts();
+		let podcasts = await this.loadPodcasts();
+
+		// Filter podcasts based on search query
+		if (this.searchQuery) {
+			podcasts = this.filterPodcasts(podcasts, this.searchQuery);
+		}
 
 		if (podcasts.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'empty-state' });
-			empty.createEl('p', { text: 'No podcasts yet' });
-			empty.createEl('p', {
-				text: 'Click the + button to subscribe to a podcast',
-				cls: 'empty-state-hint'
-			});
+			if (this.searchQuery) {
+				empty.createEl('p', { text: 'No podcasts found' });
+				empty.createEl('p', {
+					text: `No podcasts match "${this.searchQuery}"`,
+					cls: 'empty-state-hint'
+				});
+			} else {
+				empty.createEl('p', { text: 'No podcasts yet' });
+				empty.createEl('p', {
+					text: 'Click the + button to subscribe to a podcast',
+					cls: 'empty-state-hint'
+				});
+			}
 			return;
 		}
 
@@ -222,15 +272,28 @@ export class PodcastSidebarView extends ItemView {
 
 		const listContainer = this.sidebarContentEl.createDiv({ cls: 'episode-list-container' });
 
-		const episodes = this.selectedPodcast.episodes || [];
+		let episodes = this.selectedPodcast.episodes || [];
+
+		// Filter episodes based on search query
+		if (this.searchQuery) {
+			episodes = this.filterEpisodes(episodes, this.searchQuery);
+		}
 
 		if (episodes.length === 0) {
 			const empty = listContainer.createDiv({ cls: 'empty-state' });
-			empty.createEl('p', { text: 'No episodes available' });
-			empty.createEl('p', {
-				text: 'Try refreshing the feed',
-				cls: 'empty-state-hint'
-			});
+			if (this.searchQuery) {
+				empty.createEl('p', { text: 'No episodes found' });
+				empty.createEl('p', {
+					text: `No episodes match "${this.searchQuery}"`,
+					cls: 'empty-state-hint'
+				});
+			} else {
+				empty.createEl('p', { text: 'No episodes available' });
+				empty.createEl('p', {
+					text: 'Try refreshing the feed',
+					cls: 'empty-state-hint'
+				});
+			}
 			return;
 		}
 
@@ -562,6 +625,46 @@ export class PodcastSidebarView extends ItemView {
 			console.error('Failed to load podcasts:', error);
 			return [];
 		}
+	}
+
+	/**
+	 * Filter podcasts based on search query
+	 */
+	private filterPodcasts(podcasts: Podcast[], query: string): Podcast[] {
+		const lowerQuery = query.toLowerCase();
+		return podcasts.filter(podcast => {
+			// Search in title
+			if (podcast.title.toLowerCase().includes(lowerQuery)) {
+				return true;
+			}
+			// Search in author
+			if (podcast.author?.toLowerCase().includes(lowerQuery)) {
+				return true;
+			}
+			// Search in description
+			if (podcast.description?.toLowerCase().includes(lowerQuery)) {
+				return true;
+			}
+			return false;
+		});
+	}
+
+	/**
+	 * Filter episodes based on search query
+	 */
+	private filterEpisodes(episodes: Episode[], query: string): Episode[] {
+		const lowerQuery = query.toLowerCase();
+		return episodes.filter(episode => {
+			// Search in title
+			if (episode.title.toLowerCase().includes(lowerQuery)) {
+				return true;
+			}
+			// Search in description
+			if (episode.description?.toLowerCase().includes(lowerQuery)) {
+				return true;
+			}
+			return false;
+		});
 	}
 
 	/**

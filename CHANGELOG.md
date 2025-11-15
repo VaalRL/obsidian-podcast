@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Comprehensive README.md with features, installation, and usage guide
 - CHANGELOG.md for version history tracking
+- Unit tests for core modules:
+  - SettingsStore (10 tests) - Settings management
+  - QueueManager (30 tests) - Queue operations, navigation, shuffle/repeat
+  - PlaylistManager (39 tests) - Playlist CRUD, episode management, search, merge/duplicate
+  - ProgressStore (23 tests) - Progress tracking, statistics, import/export
+- Jest testing infrastructure with Obsidian API mocks
+- Test coverage reporting (102 tests passing)
+  - PlaylistManager: 95% coverage
+  - ProgressStore: 84% coverage
+  - QueueManager: 57% coverage
+  - SettingsStore: 52% coverage
 
 ## [0.1.0] - 2025-11-15
 

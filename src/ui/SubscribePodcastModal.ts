@@ -20,6 +20,7 @@ export class SubscribePodcastModal extends Modal {
 	onSubmit: (podcastId: string) => void;
 
 	private searchResults: PodcastSearchResult[] = [];
+	private selectedFeeds: Set<string> = new Set();
 	private currentPage = 0;
 	private readonly resultsPerPage = 5;
 	private searchResultsContainer: HTMLElement | null = null;
@@ -118,10 +119,16 @@ export class SubscribePodcastModal extends Modal {
 		buttonContainer.createEl('button', { text: 'Cancel' })
 			.addEventListener('click', () => this.close());
 
-		buttonContainer.createEl('button', { text: 'Subscribe', cls: 'mod-cta' })
-			.addEventListener('click', async () => {
+		const subscribeBtn = buttonContainer.createEl('button', { text: 'Subscribe', cls: 'mod-cta' });
+		subscribeBtn.addEventListener('click', async () => {
+			if (this.selectedFeeds.size > 0) {
+				await this.handleSubscribeMultiple(Array.from(this.selectedFeeds));
+			} else if (this.feedUrl.trim()) {
 				await this.handleSubscribeByUrl(this.feedUrl.trim());
-			});
+			} else {
+				new Notice('Please select a podcast or enter a URL');
+			}
+		});
 	}
 
 	/**
@@ -222,6 +229,9 @@ export class SubscribePodcastModal extends Modal {
 	 */
 	private renderSearchResultItem(container: HTMLElement, result: PodcastSearchResult): void {
 		const item = container.createDiv({ cls: 'subscribe-result-item' });
+		if (this.selectedFeeds.has(result.feedUrl)) {
+			item.addClass('selected');
+		}
 
 		// Artwork
 		if (result.artworkUrl) {
@@ -249,41 +259,39 @@ export class SubscribePodcastModal extends Modal {
 				cls: 'subscribe-result-description'
 			});
 			// Truncate long descriptions
-			if (result.description.length > 150) {
-				desc.setText(result.description.substring(0, 150) + '...');
+			if (result.description.length > 100) {
+				desc.setText(result.description.substring(0, 100) + '...');
 			}
 		}
 
-		// Select button
-		const selectBtn = item.createEl('button', {
-			text: 'Select',
-			cls: 'subscribe-result-button'
+		// Select checkbox (replacing button for multi-select)
+		const checkboxContainer = item.createDiv({ cls: 'subscribe-result-checkbox-container' });
+		const checkbox = checkboxContainer.createEl('input', {
+			type: 'checkbox',
+			cls: 'subscribe-result-checkbox'
 		});
+		checkbox.checked = this.selectedFeeds.has(result.feedUrl);
 
-		const selectHandler = () => {
-			this.feedUrl = result.feedUrl;
-			if (this.feedUrlInput) {
-				this.feedUrlInput.value = result.feedUrl;
+		const toggleSelection = () => {
+			if (this.selectedFeeds.has(result.feedUrl)) {
+				this.selectedFeeds.delete(result.feedUrl);
+				item.removeClass('selected');
+				checkbox.checked = false;
+			} else {
+				this.selectedFeeds.add(result.feedUrl);
+				item.addClass('selected');
+				checkbox.checked = true;
 			}
-
-			// Update UI
-			container.querySelectorAll('.subscribe-result-item').forEach(el => {
-				el.removeClass('selected');
-				const btn = el.querySelector('.subscribe-result-button');
-				if (btn) btn.textContent = 'Select';
-			});
-			item.addClass('selected');
-			selectBtn.textContent = 'Selected';
 		};
 
-		selectBtn.addEventListener('click', (e) => {
+		checkbox.addEventListener('click', (e) => {
 			e.stopPropagation();
-			selectHandler();
+			toggleSelection();
 		});
 
-		// Click anywhere on item to select
+		// Click anywhere on item to toggle selection
 		item.addEventListener('click', () => {
-			selectHandler();
+			toggleSelection();
 		});
 	}
 
@@ -327,6 +335,49 @@ export class SubscribePodcastModal extends Modal {
 				this.renderSearchResults();
 			}
 		});
+	}
+
+	/**
+	 * Handle subscribing to multiple podcasts
+	 */
+	private async handleSubscribeMultiple(feedUrls: string[]): Promise<void> {
+		if (feedUrls.length === 0) return;
+
+		try {
+			const loadingNotice = new Notice(`Subscribing to ${feedUrls.length} podcasts...`, 0);
+			const podcastService = this.plugin.getPodcastService();
+
+			let successCount = 0;
+			let failCount = 0;
+
+			for (const url of feedUrls) {
+				const result = await podcastService.subscribe(url);
+				if (result.success) {
+					successCount++;
+				} else {
+					failCount++;
+					console.error(`Failed to subscribe to ${url}:`, result.error);
+				}
+			}
+
+			loadingNotice.hide();
+
+			if (successCount > 0) {
+				new Notice(`Successfully subscribed to ${successCount} podcasts`);
+				this.close();
+				// Trigger callback with the last successful ID (or handle differently if needed)
+				// For now, we just refresh the view via the callback if at least one succeeded
+				this.onSubmit('');
+			}
+
+			if (failCount > 0) {
+				new Notice(`Failed to subscribe to ${failCount} podcasts`);
+			}
+
+		} catch (error) {
+			console.error('Batch subscription failed:', error);
+			new Notice('Failed to subscribe to podcasts');
+		}
 	}
 
 	/**
@@ -414,5 +465,6 @@ export class SubscribePodcastModal extends Modal {
 		this.searchResultsContainer = null;
 		this.feedUrl = '';
 		this.feedUrlInput = null;
+		this.selectedFeeds.clear();
 	}
 }

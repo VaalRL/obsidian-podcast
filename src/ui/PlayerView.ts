@@ -176,11 +176,8 @@ export class PlayerView extends ItemView {
 	private renderProgressSection(container: HTMLElement): void {
 		const progressSection = container.createDiv({ cls: 'progress-section' });
 
-		// Time display
-		const timeDisplay = progressSection.createDiv({ cls: 'time-display' });
-		timeDisplay.createSpan({ text: '0:00', cls: 'current-time' });
-		timeDisplay.createSpan({ text: ' / ', cls: 'time-separator' });
-		timeDisplay.createSpan({ text: '0:00', cls: 'total-time' });
+		// Current time (Start)
+		progressSection.createSpan({ text: '0:00', cls: 'current-time' });
 
 		// Progress bar container
 		const progressBarContainer = progressSection.createDiv({ cls: 'progress-bar-container' });
@@ -189,7 +186,10 @@ export class PlayerView extends ItemView {
 		progressFill.style.width = '0%';
 
 		// Make progress bar clickable for seeking
-		progressBar.addEventListener('click', (e) => this.handleSeek(e, progressBar));
+		progressBarContainer.addEventListener('click', (e) => this.handleSeek(e, progressBarContainer));
+
+		// Total time (End)
+		progressSection.createSpan({ text: '0:00', cls: 'total-time' });
 	}
 
 	/**
@@ -199,31 +199,55 @@ export class PlayerView extends ItemView {
 		const advancedSection = container.createDiv({ cls: 'advanced-controls-section' });
 
 		// Volume control
-		const volumeControl = advancedSection.createDiv({ cls: 'volume-control' });
-		const volIcon = volumeControl.createSpan({ cls: 'volume-icon' });
+		const volumeControl = advancedSection.createDiv({ cls: 'control-group volume-control' });
+		const volIcon = volumeControl.createSpan({ cls: 'control-icon volume-icon' });
 		setIcon(volIcon, 'volume-2');
+
 		const volumeSlider = volumeControl.createEl('input', {
 			type: 'range',
-			cls: 'volume-slider',
+			cls: 'control-slider volume-slider',
 			attr: {
 				min: '0',
 				max: '100',
-				value: '100'
+				value: '100',
+				title: 'Volume'
 			}
 		});
+
+		const volumeLabel = volumeControl.createSpan({ cls: 'control-value-label volume-value', text: '100' });
+
 		volumeSlider.addEventListener('input', (e) => {
 			const target = e.target as HTMLInputElement;
-			this.handleVolumeChange(parseInt(target.value));
+			const volume = parseInt(target.value);
+			volumeLabel.textContent = String(volume);
+			this.handleVolumeChange(volume);
 		});
 
 		// Speed control
-		const speedControl = advancedSection.createDiv({ cls: 'speed-control' });
-		speedControl.createSpan({ text: 'Speed:', cls: 'speed-label' });
-		const speedBtn = speedControl.createEl('button', {
-			text: '1.0x',
-			cls: 'speed-button'
+		const speedControl = advancedSection.createDiv({ cls: 'control-group speed-control' });
+		const speedIcon = speedControl.createSpan({ cls: 'control-icon speed-icon' });
+		setIcon(speedIcon, 'zap'); // Use a suitable icon for speed
+
+		const speedSlider = speedControl.createEl('input', {
+			type: 'range',
+			cls: 'control-slider speed-slider',
+			attr: {
+				min: '0.5',
+				max: '3.0',
+				step: '0.1',
+				value: '1.0',
+				title: 'Playback Speed'
+			}
 		});
-		speedBtn.addEventListener('click', () => this.handleSpeedChange());
+
+		const speedLabel = speedControl.createSpan({ cls: 'control-value-label speed-value', text: '1.0x' });
+
+		speedSlider.addEventListener('input', (e) => {
+			const target = e.target as HTMLInputElement;
+			const speed = parseFloat(target.value);
+			speedLabel.textContent = `${speed.toFixed(1)}x`;
+			this.handleSpeedChange(speed);
+		});
 	}
 
 	/**
@@ -355,7 +379,8 @@ export class PlayerView extends ItemView {
 
 			const rect = progressBar.getBoundingClientRect();
 			const clickX = event.clientX - rect.left;
-			const percentage = clickX / rect.width;
+			// Ensure percentage is between 0 and 1
+			const percentage = Math.max(0, Math.min(1, clickX / rect.width));
 
 			// Calculate target position in seconds
 			const duration = state.currentEpisode.duration;
@@ -383,19 +408,10 @@ export class PlayerView extends ItemView {
 	/**
 	 * Handle speed change (cycle through speeds)
 	 */
-	private async handleSpeedChange(): Promise<void> {
+	private async handleSpeedChange(speed: number): Promise<void> {
 		try {
 			const playerController = this.plugin.playerController;
-			const state = playerController.getState();
-			const currentSpeed = state.playbackSpeed;
-
-			// Cycle through common speeds: 1.0x → 1.25x → 1.5x → 2.0x → 1.0x
-			const speeds = [1.0, 1.25, 1.5, 2.0];
-			const currentIndex = speeds.indexOf(currentSpeed);
-			const nextIndex = (currentIndex + 1) % speeds.length;
-			const nextSpeed = speeds[nextIndex];
-
-			await playerController.setPlaybackSpeed(nextSpeed);
+			await playerController.setPlaybackSpeed(speed);
 		} catch (error) {
 			console.error('Failed to change playback speed:', error);
 		}
@@ -494,10 +510,17 @@ export class PlayerView extends ItemView {
 				volumeSlider.value = String(state.volume * 100);
 			}
 
-			// Update speed button
-			const speedBtn = this.playerContentEl.querySelector('.speed-button') as HTMLElement;
-			if (speedBtn) {
-				speedBtn.textContent = `${state.playbackSpeed.toFixed(2)}x`;
+			// Update speed slider and label
+			const speedSlider = this.playerContentEl.querySelector('.speed-slider') as HTMLInputElement;
+			const speedLabel = this.playerContentEl.querySelector('.speed-value') as HTMLElement;
+			if (speedSlider) {
+				// Only update if not being dragged (optional check, but simple assignment is usually fine)
+				if (document.activeElement !== speedSlider) {
+					speedSlider.value = String(state.playbackSpeed);
+				}
+			}
+			if (speedLabel) {
+				speedLabel.textContent = `${state.playbackSpeed.toFixed(1)}x`;
 			}
 		} catch (error) {
 			console.error('Failed to update player state:', error);

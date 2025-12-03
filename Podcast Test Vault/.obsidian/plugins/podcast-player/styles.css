@@ -10,9 +10,9 @@
    ========================================================================== */
 
 .podcast-player-container {
-	padding: var(--size-4-4);
-	border-radius: var(--radius-m);
-	background-color: var(--background-secondary);
+    padding: var(--size-4-4);
+    border-radius: var(--radius-m);
+    background-color: var(--background-secondary);
 }
 
 /* ==========================================================================
@@ -20,26 +20,26 @@
    ========================================================================== */
 
 .podcast-list {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-2);
 }
 
 .podcast-list-item {
-	display: flex;
-	align-items: center;
-	padding: var(--size-4-3);
-	border-radius: var(--radius-s);
-	cursor: pointer;
-	transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    padding: var(--size-4-3);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .podcast-list-item:hover {
-	background-color: var(--background-modifier-hover);
+    background-color: var(--background-modifier-hover);
 }
 
 .podcast-list-item.is-active {
-	background-color: var(--background-modifier-active-hover);
+    background-color: var(--background-modifier-active-hover);
 }
 
 /* ==========================================================================
@@ -47,20 +47,20 @@
    ========================================================================== */
 
 .episode-list {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-1);
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-1);
 }
 
 .episode-list-item {
-	padding: var(--size-4-2);
-	border-radius: var(--radius-s);
-	cursor: pointer;
-	transition: background-color 0.2s;
+    padding: var(--size-4-2);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .episode-list-item:hover {
-	background-color: var(--background-modifier-hover);
+    background-color: var(--background-modifier-hover);
 }
 
 /* ==========================================================================
@@ -68,74 +68,110 @@
    ========================================================================== */
 
 .playback-controls {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: var(--size-4-3);
-	padding: var(--size-4-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--size-4-3);
+    padding: var(--size-4-4);
 }
 
 .playback-button {
-	width: 40px;
-	height: 40px;
-	border-radius: 50%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	cursor: pointer;
-	transition: background-color 0.2s;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .playback-button:hover {
-	background-color: var(--background-modifier-hover);
+    background-color: var(--background-modifier-hover);
 }
 
 .playback-button.primary {
-	width: 56px;
-	height: 56px;
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
+    width: 56px;
+    height: 56px;
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
 }
 
 .playback-button.primary:hover {
-	background-color: var(--interactive-accent-hover);
+    background-color: var(--interactive-accent-hover);
 }
 
 /* ==========================================================================
-   Progress Bar
+   Progress Bar (Hand-Drawn Style)
    ========================================================================== */
 
 .progress-bar-container {
-	width: 100%;
-	height: 6px;
-	background-color: var(--background-modifier-border);
-	border-radius: var(--radius-s);
-	cursor: pointer;
-	position: relative;
+    width: 100%;
+    height: 14px;
+    background-color: var(--background-modifier-border);
+    border: 2px solid var(--text-muted);
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 2px 2px 0px var(--text-muted);
+    margin: 6px 0;
+    /* Increased margin for thumb */
+    transition: all 0.2s ease;
+    /* Removed overflow: hidden to allow thumb to be visible */
+}
+
+.progress-bar-container:hover {
+    transform: scale(1.01) rotate(-0.5deg);
+    box-shadow: 3px 3px 0px var(--text-muted);
 }
 
 .progress-bar {
-	height: 100%;
-	background-color: var(--interactive-accent);
-	border-radius: var(--radius-s);
-	transition: width 0.1s linear;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    overflow: visible;
+    /* Ensure thumb is visible */
 }
 
+.progress-fill {
+    height: 100%;
+    background-color: var(--interactive-accent);
+    /* Simplified gradient for better visibility */
+    background-image: repeating-linear-gradient(45deg,
+            rgba(255, 255, 255, 0.3),
+            rgba(255, 255, 255, 0.3) 10px,
+            transparent 10px,
+            transparent 20px);
+    border-radius: 255px 0 0 255px / 15px 0 0 255px;
+    /* Only round left side initially */
+    transition: width 0.1s linear;
+    position: relative;
+    /* For pseudo-element positioning */
+    min-width: 2px;
+    /* Ensure it's visible even at 0% if needed, or remove */
+    display: block;
+}
+
+/* Hand-drawn thumb */
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    background-color: var(--text-normal);
+    border: 2px solid var(--background-primary);
+    border-radius: 50%;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+/* Unused but kept for compatibility */
 .progress-bar-thumb {
-	position: absolute;
-	top: 50%;
-	transform: translateY(-50%);
-	width: 12px;
-	height: 12px;
-	background-color: var(--interactive-accent);
-	border-radius: 50%;
-	cursor: grab;
-	opacity: 0;
-	transition: opacity 0.2s;
-}
-
-.progress-bar-container:hover .progress-bar-thumb {
-	opacity: 1;
+    display: none;
 }
 
 /* ==========================================================================
@@ -143,15 +179,15 @@
    ========================================================================== */
 
 .hidden {
-	display: none !important;
+    display: none !important;
 }
 
 .text-muted {
-	color: var(--text-muted);
+    color: var(--text-muted);
 }
 
 .text-small {
-	font-size: var(--font-ui-smaller);
+    font-size: var(--font-ui-smaller);
 }
 
 /* ==========================================================================
@@ -159,34 +195,34 @@
    ========================================================================== */
 
 .sidebar-mode-toggle {
-	display: flex;
-	gap: var(--size-4-2);
-	margin-bottom: var(--size-4-3);
-	padding: 0 var(--size-4-2);
+    display: flex;
+    gap: var(--size-4-2);
+    margin-bottom: var(--size-4-3);
+    padding: 0 var(--size-4-2);
 }
 
 .sidebar-mode-toggle button {
-	flex: 1;
-	padding: var(--size-4-2) var(--size-4-3);
-	border-radius: var(--radius-s);
-	cursor: pointer;
-	transition: all 0.2s;
-	font-weight: 500;
+    flex: 1;
+    padding: var(--size-4-2) var(--size-4-3);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
 }
 
 .sidebar-mode-toggle button.mode-active {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
 }
 
 .sidebar-mode-toggle button.mode-inactive {
-	background-color: var(--background-secondary);
-	color: var(--text-muted);
+    background-color: var(--background-secondary);
+    color: var(--text-muted);
 }
 
 .sidebar-mode-toggle button.mode-inactive:hover {
-	background-color: var(--background-modifier-hover);
-	color: var(--text-normal);
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
 }
 
 /* ==========================================================================
@@ -194,34 +230,34 @@
    ========================================================================== */
 
 .playlist-item {
-	padding: var(--size-4-3);
-	border-radius: var(--radius-s);
-	cursor: pointer;
-	transition: background-color 0.2s;
-	border: 1px solid var(--background-modifier-border);
-	margin-bottom: var(--size-4-2);
+    padding: var(--size-4-3);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: var(--size-4-2);
 }
 
 .playlist-item:hover {
-	background-color: var(--background-modifier-hover);
+    background-color: var(--background-modifier-hover);
 }
 
 .playlist-item-title {
-	font-weight: 600;
-	margin: 0 0 var(--size-4-1) 0;
+    font-weight: 600;
+    margin: 0 0 var(--size-4-1) 0;
 }
 
 .playlist-item-description {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
-	margin: 0 0 var(--size-4-2) 0;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    margin: 0 0 var(--size-4-2) 0;
 }
 
 .playlist-item-metadata {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
-	display: flex;
-	gap: var(--size-4-2);
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    display: flex;
+    gap: var(--size-4-2);
 }
 
 /* ==========================================================================
@@ -229,44 +265,44 @@
    ========================================================================== */
 
 .playlist-episode-item {
-	display: flex;
-	align-items: center;
-	padding: var(--size-4-2);
-	border-radius: var(--radius-s);
-	cursor: pointer;
-	transition: background-color 0.2s;
-	gap: var(--size-4-3);
-	border: 1px solid var(--background-modifier-border);
-	margin-bottom: var(--size-4-1);
+    display: flex;
+    align-items: center;
+    padding: var(--size-4-2);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    gap: var(--size-4-3);
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: var(--size-4-1);
 }
 
 .playlist-episode-item:hover {
-	background-color: var(--background-modifier-hover);
+    background-color: var(--background-modifier-hover);
 }
 
 .playlist-episode-index {
-	min-width: 30px;
-	text-align: center;
-	font-weight: 600;
-	color: var(--text-muted);
+    min-width: 30px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-muted);
 }
 
 .playlist-episode-info {
-	flex: 1;
-	min-width: 0;
+    flex: 1;
+    min-width: 0;
 }
 
 .playlist-episode-title {
-	font-weight: 500;
-	margin: 0 0 var(--size-4-1) 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+    font-weight: 500;
+    margin: 0 0 var(--size-4-1) 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .playlist-episode-duration {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
 }
 
 /* ==========================================================================
@@ -274,48 +310,48 @@
    ========================================================================== */
 
 .queue-section {
-	margin-top: var(--size-4-4);
-	padding-top: var(--size-4-4);
-	border-top: 1px solid var(--background-modifier-border);
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-4);
+    border-top: 1px solid var(--background-modifier-border);
 }
 
 .queue-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: var(--size-4-3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--size-4-3);
 }
 
 .queue-title {
-	margin: 0;
-	font-size: var(--font-ui-medium);
-	font-weight: 600;
+    margin: 0;
+    font-size: var(--font-ui-medium);
+    font-weight: 600;
 }
 
 .queue-controls {
-	display: flex;
-	gap: var(--size-4-2);
-	margin-bottom: var(--size-4-3);
+    display: flex;
+    gap: var(--size-4-2);
+    margin-bottom: var(--size-4-3);
 }
 
 .queue-control-btn {
-	padding: var(--size-4-2) var(--size-4-3);
-	border-radius: var(--radius-s);
-	background-color: var(--background-secondary);
-	cursor: pointer;
-	transition: all 0.2s;
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
+    padding: var(--size-4-2) var(--size-4-3);
+    border-radius: var(--radius-s);
+    background-color: var(--background-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
 }
 
 .queue-control-btn:hover {
-	background-color: var(--background-modifier-hover);
-	color: var(--text-normal);
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
 }
 
 .queue-control-btn.active {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
 }
 
 /* ==========================================================================
@@ -323,85 +359,85 @@
    ========================================================================== */
 
 .queue-episode-list {
-	background-color: var(--background-secondary);
-	border-radius: var(--radius-m);
-	padding: var(--size-4-3);
+    background-color: var(--background-secondary);
+    border-radius: var(--radius-m);
+    padding: var(--size-4-3);
 }
 
 .queue-info {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
-	margin-bottom: var(--size-4-3);
-	padding-bottom: var(--size-4-2);
-	border-bottom: 1px solid var(--background-modifier-border);
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    margin-bottom: var(--size-4-3);
+    padding-bottom: var(--size-4-2);
+    border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .queue-episodes {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-1);
-	max-height: 300px;
-	overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-1);
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 .queue-episode-item {
-	display: flex;
-	align-items: center;
-	padding: var(--size-4-2);
-	border-radius: var(--radius-s);
-	cursor: pointer;
-	transition: background-color 0.2s;
-	gap: var(--size-4-2);
+    display: flex;
+    align-items: center;
+    padding: var(--size-4-2);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    gap: var(--size-4-2);
 }
 
 .queue-episode-item:hover {
-	background-color: var(--background-modifier-hover);
+    background-color: var(--background-modifier-hover);
 }
 
 .queue-episode-item.current {
-	background-color: var(--background-modifier-active-hover);
+    background-color: var(--background-modifier-active-hover);
 }
 
 .queue-episode-index {
-	min-width: 24px;
-	text-align: center;
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
-	font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    font-weight: 600;
 }
 
 .queue-episode-item.current .queue-episode-index {
-	color: var(--interactive-accent);
+    color: var(--interactive-accent);
 }
 
 .queue-episode-info {
-	flex: 1;
-	min-width: 0;
+    flex: 1;
+    min-width: 0;
 }
 
 .queue-episode-title {
-	font-size: var(--font-ui-small);
-	margin-bottom: var(--size-4-1);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+    font-size: var(--font-ui-small);
+    margin-bottom: var(--size-4-1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .queue-episode-duration {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
 }
 
 .queue-more {
-	text-align: center;
-	padding: var(--size-4-2);
-	margin-top: var(--size-4-2);
+    text-align: center;
+    padding: var(--size-4-2);
+    margin-top: var(--size-4-2);
 }
 
 .queue-more-text {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
-	font-style: italic;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    font-style: italic;
 }
 
 /* ==========================================================================
@@ -409,21 +445,22 @@
    ========================================================================== */
 
 .queue-empty-state {
-	text-align: center;
-	padding: var(--size-4-4);
-	color: var(--text-muted);
+    text-align: center;
+    padding: var(--size-4-4);
+    color: var(--text-muted);
 }
 
 .queue-empty-hint {
-	font-size: var(--font-ui-smaller);
-	margin-top: var(--size-4-2);
+    font-size: var(--font-ui-smaller);
+    margin-top: var(--size-4-2);
 }
 
 .queue-error-state {
-	text-align: center;
-	padding: var(--size-4-4);
-	color: var(--text-error);
+    text-align: center;
+    padding: var(--size-4-4);
+    color: var(--text-error);
 }
+
 /* ==========================================================================
    Episode Item Layout Fix - Ensures buttons appear on the right side
    ========================================================================== */
@@ -466,6 +503,7 @@
     gap: var(--size-4-1) !important;
     flex-shrink: 0 !important;
 }
+
 /* ==========================================================================
    Podcast Item Layout (Feed List)
    ========================================================================== */
@@ -567,6 +605,7 @@
     width: 800px !important;
     max-width: 90vw !important;
 }
+
 /* ==========================================================================
    Sidebar Header Layout
    ========================================================================== */
@@ -615,6 +654,7 @@
 .sidebar-back-button {
     margin-bottom: var(--size-4-2) !important;
 }
+
 /* ==========================================================================
    Sidebar Search Layout
    ========================================================================== */
@@ -633,6 +673,7 @@
 .sidebar-search-button {
     flex-shrink: 0 !important;
 }
+
 /* ==========================================================================
    Sidebar Sort Layout
    ========================================================================== */
@@ -659,6 +700,7 @@
     background-color: var(--background-modifier-hover) !important;
     color: var(--text-normal) !important;
 }
+
 /* ==========================================================================
    Episode Detail Modal Layout
    ========================================================================== */
@@ -766,6 +808,7 @@
     flex: 1;
     min-width: 120px;
 }
+
 /* ==========================================================================
    Episode List Spacing Fix
    ========================================================================== */
@@ -783,6 +826,7 @@
     gap: var(--size-4-1) !important;
     /* Reduced gap */
 }
+
 /* ==========================================================================
    Episode List Compact Spacing Fix (Retry)
    ========================================================================== */
@@ -813,6 +857,7 @@
     margin-top: var(--size-4-1) !important;
     /* Tighter actions spacing */
 }
+
 /* ==========================================================================
    Header Layout Fix - Back Button on Same Row as Title
    ========================================================================== */
@@ -867,6 +912,7 @@
     gap: var(--size-4-2) !important;
     flex-shrink: 0 !important;
 }
+
 /* ==========================================================================
    Player View Layout Fix - Center Playback Controls
    ========================================================================== */
@@ -925,6 +971,7 @@
 .queue-controls {
     display: none !important;
 }
+
 /* ==========================================================================
    Player View Layout Fix - Smaller Centered Playback Controls
    ========================================================================== */
@@ -993,4 +1040,190 @@
 /* Hide queue controls section since we removed shuffle and repeat */
 .queue-controls {
     display: none !important;
+}
+
+/* ==========================================================================
+   Advanced Controls (Volume & Speed)
+   ========================================================================== */
+
+.advanced-controls-section {`r`n    display: flex;`r`n    flex-direction: column;
+    gap: var(--size-4-6);
+    margin-top: var(--size-4-2);
+    padding: 0 var(--size-4-2);
+}
+
+.control-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+    min-width: 0;
+    /* Prevent flex item from overflowing */
+}
+
+.control-icon {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.control-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.control-slider {
+    flex: 1;
+    width: 100%;
+    cursor: pointer;
+    accent-color: var(--interactive-accent);
+    height: 4px;
+    min-width: 50px;
+    /* Minimum width for usability */
+}
+
+.control-value-label {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    min-width: 32px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+/* Custom Range Slider Styling (Optional but nice) */
+.control-slider {
+    -webkit-appearance: none;
+    background: transparent;
+}
+
+.control-slider::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    background: var(--background-modifier-border);
+    border-radius: var(--radius-s);
+}
+
+.control-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    background: var(--interactive-accent);
+    margin-top: -4px;
+    /* Center thumb on track */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: transform 0.1s;
+}
+
+.control-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.2);
+}
+/* ==========================================================================
+   Progress Section Layout
+   ========================================================================== */
+
+.progress-section {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-3);
+    margin-bottom: var(--size-4-6);
+    padding: 0 var(--size-4-2);
+}
+
+.current-time, .total-time {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 40px;
+    flex-shrink: 0;
+}
+
+.current-time {
+    text-align: right;
+}
+
+.total-time {
+    text-align: left;
+}
+
+.progress-bar-container {
+    flex: 1;
+    margin: 0 !important;
+}
+
+/* ==========================================================================
+   Subscribe Modal Search Results
+   ========================================================================== */
+
+.subscribe-result-item {
+    display: flex;
+    align-items: center;
+    padding: var(--size-4-2);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    margin-bottom: var(--size-4-2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    gap: var(--size-4-3);
+}
+
+.subscribe-result-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.subscribe-result-item.selected {
+    background-color: var(--background-modifier-active-hover);
+    border-color: var(--interactive-accent);
+}
+
+.subscribe-result-artwork {
+    width: 40px !important; /* Smaller thumbnail size */
+    height: 40px !important;
+    border-radius: var(--radius-s);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.subscribe-result-artwork-placeholder {
+    width: 40px !important;
+    height: 40px !important;
+    background-color: var(--background-secondary);
+    border-radius: var(--radius-s);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.subscribe-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.subscribe-result-title {
+    margin: 0 0 2px 0;
+    font-size: var(--font-ui-small);
+    font-weight: 600;
+}
+
+.subscribe-result-author {
+    margin: 0;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+.subscribe-result-checkbox-container {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--size-4-1);
+}
+
+.subscribe-result-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
 }

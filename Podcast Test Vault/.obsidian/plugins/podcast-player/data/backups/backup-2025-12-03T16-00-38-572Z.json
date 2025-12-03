@@ -10762,37 +10762,6 @@
           "guid": "https://api.spreaker.com/episode/44864566"
         }
       ]
-    },
-    {
-      "id": "podcast-svoezu",
-      "title": "Gg",
-      "author": "Genesis Dave San Jose",
-      "description": "Sample",
-      "feedUrl": "https://anchor.fm/s/29ae02a8/podcast/rss",
-      "imageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/production/podcast_uploaded/6892698/6892698-1593664545553-1dcf7f29f16e7.jpg",
-      "websiteUrl": "https://podcasters.spotify.com/pod/show/genesis-dave-san-jose",
-      "categories": [
-        "Religion & Spirituality"
-      ],
-      "language": "en",
-      "subscribedAt": "2025-12-03T16:00:37.838Z",
-      "lastFetchedAt": "2025-12-03T16:00:37.838Z",
-      "episodes": [
-        {
-          "id": "episode-kicdzi",
-          "podcastId": "podcast-svoezu",
-          "title": "Gg (Trailer)",
-          "description": "No description available",
-          "audioUrl": "https://anchor.fm/s/29ae02a8/podcast/play/16004381/https%3A%2F%2Fd3ctxlq1ktw2nl.cloudfront.net%2Fstaging%2F2020-6-2%2F86983841-44100-2-69672ba09a694.m4a",
-          "duration": 11,
-          "publishDate": "2020-07-02T04:36:22.000Z",
-          "episodeType": "trailer",
-          "imageUrl": "https://d3t3ozftmdmh3i.cloudfront.net/production/podcast_uploaded/6892698/6892698-1593664545553-1dcf7f29f16e7.jpg",
-          "fileSize": 186768,
-          "mimeType": "audio/x-m4a",
-          "guid": "a45b8530-69d8-44a8-92a6-81d8619fba3e"
-        }
-      ]
     }
   ],
   "version": 1

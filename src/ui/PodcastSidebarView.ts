@@ -261,7 +261,10 @@ export class PodcastSidebarView extends ItemView {
 			});
 			setIcon(backBtn, 'arrow-left');
 			backBtn.createSpan({ text: ' Back' });
-			backBtn.addEventListener('click', () => {
+			backBtn.addEventListener('click', (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				console.log('Back button clicked'); // Debug log
 				this.selectedPodcast = null;
 				this.selectedPlaylist = null;
 				this.render();
@@ -317,6 +320,14 @@ export class PodcastSidebarView extends ItemView {
 			});
 			setIcon(settingsBtn, 'settings');
 			settingsBtn.addEventListener('click', () => this.handlePodcastSettings());
+		} else if (this.selectedPlaylist) {
+			// Rename button (for selected playlist)
+			const renameBtn = actions.createEl('button', {
+				cls: 'sidebar-action-button',
+				attr: { 'aria-label': 'Rename playlist' }
+			});
+			setIcon(renameBtn, 'pencil');
+			renameBtn.addEventListener('click', () => this.handleRenamePlaylist());
 		}
 
 		// Mode toggle (only if not viewing details) - separate row below header
@@ -685,12 +696,37 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Handle play episode button click
 	 */
-	private async handlePlayEpisode(episode: Episode, addToQueue = false): Promise<void> {
+	private async handlePlayEpisode(episode: Episode, addToQueue = false, fromPlaylist?: Playlist): Promise<void> {
 		try {
 			const playerController = this.plugin.playerController;
+			const queueManager = this.plugin.getQueueManager();
 
-			if (addToQueue) {
-				const queueManager = this.plugin.getQueueManager();
+			// If playing from a playlist, create/update queue with playlist episodes
+			if (fromPlaylist) {
+				// Find or create a queue with the playlist name
+				const allQueues = await queueManager.getAllQueues();
+				let queue = allQueues.find(q => q.name === `Playlist: ${fromPlaylist.name}`);
+
+				if (!queue) {
+					// Create new queue for this playlist
+					queue = await queueManager.createQueue(`Playlist: ${fromPlaylist.name}`);
+				}
+
+				// Clear and repopulate queue with playlist episodes
+				await queueManager.clearQueue(queue.id);
+				for (const episodeId of fromPlaylist.episodeIds) {
+					await queueManager.addEpisode(queue.id, episodeId);
+				}
+
+				// Find the index of the episode to play
+				const episodeIndex = fromPlaylist.episodeIds.indexOf(episode.id);
+				if (episodeIndex !== -1) {
+					await queueManager.jumpTo(queue.id, episodeIndex);
+				}
+
+				// Set this as the current queue
+				queueManager.setCurrentQueue(queue.id);
+			} else if (addToQueue) {
 				// Get or create default queue
 				let queue = await queueManager.getCurrentQueue();
 				if (!queue) {
@@ -1091,6 +1127,17 @@ export class PodcastSidebarView extends ItemView {
 		metadata.createSpan({ text: `${playlist.episodeIds.length} episodes`, cls: 'playlist-count' });
 		metadata.createSpan({ text: ` • Updated ${this.formatDate(playlist.updatedAt)}`, cls: 'playlist-date' });
 
+		// Play button
+		const playBtn = item.createEl('button', {
+			cls: 'playlist-play-button',
+			attr: { 'aria-label': 'Play playlist' }
+		});
+		setIcon(playBtn, 'play');
+		playBtn.addEventListener('click', (e) => {
+			e.stopPropagation(); // Prevent triggering item click
+			this.handlePlayPlaylist(playlist);
+		});
+
 		// Click to view details
 		item.addEventListener('click', () => {
 			this.selectedPlaylist = playlist;
@@ -1180,7 +1227,8 @@ export class PodcastSidebarView extends ItemView {
 		setIcon(playBtn, 'play');
 		playBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
-			this.handlePlayEpisode(episode);
+			// Pass the current playlist when playing from playlist
+			this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined);
 		});
 
 		// Click to show episode details
@@ -1217,6 +1265,35 @@ export class PodcastSidebarView extends ItemView {
 		} catch (error) {
 			console.error('Failed to create playlist:', error);
 			new Notice('Failed to create playlist');
+		}
+	}
+
+	/**
+	 * Handle rename playlist button click
+	 */
+	private async handleRenamePlaylist(): Promise<void> {
+		if (!this.selectedPlaylist) return;
+
+		try {
+			// Prompt for new playlist name
+			const newName = await this.promptForInput(
+				'Rename Playlist',
+				'Enter new playlist name:',
+				this.selectedPlaylist.name
+			);
+			if (!newName || newName === this.selectedPlaylist.name) return;
+
+			const playlistManager = this.plugin.getPlaylistManager();
+			await playlistManager.updatePlaylist(this.selectedPlaylist.id, { name: newName });
+
+			new Notice(`Playlist renamed to "${newName}"`);
+
+			// Update selected playlist and refresh the view
+			this.selectedPlaylist = await playlistManager.getPlaylist(this.selectedPlaylist.id);
+			await this.render();
+		} catch (error) {
+			console.error('Failed to rename playlist:', error);
+			new Notice('Failed to rename playlist');
 		}
 	}
 
@@ -1297,7 +1374,7 @@ export class PodcastSidebarView extends ItemView {
 			item
 				.setTitle('Play')
 				.setIcon('play')
-				.onClick(() => this.handlePlayEpisode(episode))
+				.onClick(() => this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined))
 		);
 
 		menu.addSeparator();

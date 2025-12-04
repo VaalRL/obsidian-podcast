@@ -75,7 +75,7 @@
             }
           },
           {
-            "id": "b24e1e7a9ea5c188",
+            "id": "080ca29a0cedef19",
             "type": "leaf",
             "state": {
               "type": "podcast-sidebar-view",
@@ -165,16 +165,17 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "未命名.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "大綱"
+              "title": "未命名 的大綱"
             }
           },
           {
-            "id": "6c2f3b86442a4c80",
+            "id": "404dc198470d5e1d",
             "type": "leaf",
             "state": {
               "type": "podcast-player-view",
@@ -188,21 +189,21 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 817.5
   },
   "left-ribbon": {
     "hiddenItems": {
+      "podcast-player:Podcast Player": false,
       "switcher:開啟快速切換": false,
       "graph:查看關聯圖": false,
       "canvas:建立新畫布": false,
       "daily-notes:開啟今天的每日筆記": false,
       "templates:插入模板": false,
       "bases:建立新的 base": false,
-      "command-palette:開啟命令面板": false,
-      "podcast-player:Podcast Player": false
+      "command-palette:開啟命令面板": false
     }
   },
-  "active": "8ab6f1bcd8d11d0b",
+  "active": "080ca29a0cedef19",
   "lastOpenFiles": [
     "未命名.md",
     "未命名.base"

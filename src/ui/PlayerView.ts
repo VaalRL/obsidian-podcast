@@ -499,9 +499,18 @@ export class PlayerView extends ItemView {
 
 			// Update progress bar
 			const progressFill = this.playerContentEl.querySelector('.progress-fill') as HTMLElement;
-			if (progressFill && state.currentEpisode) {
-				const percentage = (state.position / state.currentEpisode.duration) * 100;
-				progressFill.style.width = `${percentage}%`;
+			if (progressFill) {
+				if (state.currentEpisode && state.currentEpisode.duration > 0) {
+					const percentage = Math.min(100, Math.max(0, (state.position / state.currentEpisode.duration) * 100));
+					progressFill.style.width = `${percentage}%`;
+					// Debug log
+					if (percentage > 0) {
+						console.log(`Progress bar updated: ${percentage.toFixed(2)}% (${state.position.toFixed(1)}s / ${state.currentEpisode.duration.toFixed(1)}s)`);
+					}
+				} else {
+					// No episode or invalid duration, reset to 0
+					progressFill.style.width = '0%';
+				}
 			}
 
 			// Update volume slider
@@ -548,13 +557,14 @@ export class PlayerView extends ItemView {
 	private async renderQueueSection(container: HTMLElement): Promise<void> {
 		const queueSection = container.createDiv({ cls: 'queue-section' });
 
-		// Section header
-		const header = queueSection.createDiv({ cls: 'queue-header' });
-		header.createEl('h3', { text: 'Current Queue', cls: 'queue-title' });
-
 		try {
 			// Get current queue
 			const queue = await this.getCurrentQueue();
+
+			// Section header with queue name
+			const header = queueSection.createDiv({ cls: 'queue-header' });
+			const titleText = queue ? `Current Queue: ${queue.name}` : 'Current Queue';
+			header.createEl('h3', { text: titleText, cls: 'queue-title' });
 
 			if (!queue || queue.episodeIds.length === 0) {
 				const emptyState = queueSection.createDiv({ cls: 'queue-empty-state' });

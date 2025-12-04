@@ -5,6 +5,7 @@
  * Integrates with FeedService for fetching and SubscriptionStore for persistence.
  */
 
+import { requestUrl } from 'obsidian';
 import { logger } from '../utils/Logger';
 import { FeedParseError, NetworkError, StorageError, handleError } from '../utils/errorUtils';
 import { Podcast, Episode, PodcastSettings, PodcastSearchResult } from '../model';
@@ -341,21 +342,27 @@ export class PodcastService {
 				return;
 			}
 
-			// Fetch image
-			const response = await fetch(imageUrl);
-			if (!response.ok) {
+			// Fetch image using Obsidian's requestUrl to avoid CORS issues
+			const response = await requestUrl({
+				url: imageUrl,
+				method: 'GET',
+			});
+
+			if (response.status !== 200) {
 				throw new Error(`Failed to fetch image: ${response.status}`);
 			}
 
-			const imageData = await response.arrayBuffer();
+			const imageData = response.arrayBuffer;
 
 			// Cache image
 			await this.imageCache.cacheImage(imageUrl, imageData);
 
 			logger.debug('Image cached successfully', imageUrl);
 		} catch (error) {
+			// Log warning but don't throw - image caching is optional
+			// CORS errors and network issues shouldn't block podcast subscription
 			logger.warn('Failed to cache image', error);
-			throw error;
+			// Don't throw the error - just return silently
 		}
 	}
 

@@ -140,27 +140,37 @@ export class PlayerController {
 			// Start tracking progress
 			await this.progressTracker.startTracking(episode);
 
+			// Wait for metadata to be loaded before seeking
+			await this.waitForMetadata();
+
+			// Determine starting position
+			let startPosition = 0;
+
 			// Resume from saved position if requested
 			if (resumeFromSaved) {
 				const shouldResume = await this.progressTracker.shouldResume(episode.id);
 				if (shouldResume) {
-					const resumePosition = await this.progressTracker.getResumePosition(episode.id);
-					logger.info('Resuming from saved position', resumePosition);
-					this.engine.seek(resumePosition);
-
-					// Skip intro if configured
-					const skipIntro = this.currentSettings.skipIntroSeconds || 0;
-					if (skipIntro > 0 && resumePosition < skipIntro) {
-						this.engine.seek(skipIntro);
-					}
+					startPosition = await this.progressTracker.getResumePosition(episode.id);
+					logger.info('Resuming from saved position', startPosition);
 				} else {
-					// Skip intro for new episodes
+					// Check for skip intro setting
 					const skipIntro = this.currentSettings.skipIntroSeconds || 0;
 					if (skipIntro > 0) {
-						this.engine.seek(skipIntro);
+						startPosition = skipIntro;
+						logger.info('Skipping intro', skipIntro);
 					}
 				}
 			}
+
+			// Apply the starting position
+			this.engine.seek(startPosition);
+
+			// Wait a moment for seek to complete, then update state to reflect actual position
+			await new Promise(resolve => setTimeout(resolve, 50));
+			const actualPosition = this.engine.getCurrentTime();
+			this.updateState({ position: actualPosition });
+
+			logger.info('Starting position set to', actualPosition);
 
 			// Notify episode change
 			this.eventHandlers.onEpisodeChange?.(episode);
@@ -180,6 +190,24 @@ export class PlayerController {
 			});
 			throw error;
 		}
+	}
+
+	/**
+	 * Wait for audio metadata to be loaded
+	 */
+	private async waitForMetadata(): Promise<void> {
+		return new Promise((resolve) => {
+			const checkMetadata = () => {
+				const duration = this.engine.getDuration();
+				if (!isNaN(duration) && duration > 0) {
+					resolve();
+				} else {
+					// Wait a bit and check again
+					setTimeout(checkMetadata, 50);
+				}
+			};
+			checkMetadata();
+		});
 	}
 
 	/**

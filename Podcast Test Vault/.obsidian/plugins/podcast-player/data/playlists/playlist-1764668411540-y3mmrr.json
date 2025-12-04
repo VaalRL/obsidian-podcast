@@ -2,7 +2,10 @@
   "id": "playlist-1764668411540-y3mmrr",
   "name": "123",
   "description": "12e44",
-  "episodeIds": [],
+  "episodeIds": [
+    "episode-f50vu5",
+    "episode-5a0km8"
+  ],
   "createdAt": "2025-12-02T09:40:11.540Z",
-  "updatedAt": "2025-12-02T09:40:11.540Z"
+  "updatedAt": "2025-12-04T07:30:08.348Z"
 }

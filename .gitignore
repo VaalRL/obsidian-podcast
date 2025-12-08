@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Test Vaults & User Data
+Test Vault/
+Podcast Test Vault/
+*.opml
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.swp
+*.bak
+*fix*.css
+DEBUG_*.html
+*_REPORT.md
+
+# AI & Agent Context
+claude/
+gemini/
+*.gemini
+CLAUDE.md
+gemini.md
+agents.md

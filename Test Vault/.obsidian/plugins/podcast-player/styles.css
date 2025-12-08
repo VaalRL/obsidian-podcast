@@ -1,0 +1,1962 @@
+/*
+ * Podcast Player Plugin Styles
+ *
+ * Base styles for the Podcast Player plugin
+ * Follows Obsidian's design system for consistency
+ */
+
+/* ==========================================================================
+   View Loading Optimization
+   ========================================================================== */
+
+/* Smooth fade-in for views to reduce visual jump during initial load */
+.podcast-sidebar-view,
+.podcast-player-view,
+.playlist-queue-view {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    animation: fadeIn 0.2s ease-in forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0.8;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Prevent layout shift during content loading */
+.podcast-sidebar-content,
+.podcast-player-content,
+.playlist-queue-content {
+    min-height: 200px;
+    pointer-events: auto !important;
+}
+
+/* ==========================================================================
+   Player Container
+   ========================================================================== */
+
+.podcast-player-container {
+    padding: var(--size-4-4);
+    border-radius: var(--radius-m);
+    background-color: var(--background-secondary);
+}
+
+/* ==========================================================================
+   Podcast List
+   ========================================================================== */
+
+.podcast-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-2);
+}
+
+.podcast-list-item {
+    display: flex;
+    align-items: center;
+    padding: var(--size-4-3);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.podcast-list-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.podcast-list-item.is-active {
+    background-color: var(--background-modifier-active-hover);
+}
+
+/* ==========================================================================
+   Episode List
+   ========================================================================== */
+
+.episode-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-1);
+}
+
+.episode-list-item {
+    padding: var(--size-4-2);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.episode-list-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+/* ==========================================================================
+   Playback Controls
+   ========================================================================== */
+
+.playback-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--size-4-3);
+    padding: var(--size-4-4);
+}
+
+.playback-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.playback-button:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.playback-button.primary {
+    width: 56px;
+    height: 56px;
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.playback-button.primary:hover {
+    background-color: var(--interactive-accent-hover);
+}
+
+/* ==========================================================================
+   Progress Bar (Hand-Drawn Style)
+   ========================================================================== */
+
+.player-container .progress-bar-container {
+    width: 100%;
+    height: 14px;
+    background-color: var(--background-modifier-border);
+    border: 2px solid var(--text-muted);
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 2px 2px 0px var(--text-muted);
+    margin: 6px 0;
+    /* Increased margin for thumb */
+    transition: all 0.2s ease;
+    /* Removed overflow: hidden to allow thumb to be visible */
+}
+
+.player-container .progress-bar-container:hover {
+    transform: scale(1.01) rotate(-0.5deg);
+    box-shadow: 3px 3px 0px var(--text-muted);
+}
+
+.player-container .progress-bar {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    position: relative;
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    overflow: visible;
+    /* Ensure thumb is visible */
+}
+
+.player-container .progress-fill {
+    height: 100%;
+    background-color: var(--interactive-accent);
+    /* Simplified gradient for better visibility */
+    background-image: repeating-linear-gradient(45deg,
+            rgba(255, 255, 255, 0.3),
+            rgba(255, 255, 255, 0.3) 10px,
+            transparent 10px,
+            transparent 20px);
+    border-radius: 255px 0 0 255px / 15px 0 0 255px;
+    /* Only round left side initially */
+    transition: width 0.1s linear;
+    position: relative;
+    /* For pseudo-element positioning */
+    /* min-width removed - using real thumb element now */
+    display: block;
+}
+
+/* Hand-drawn thumb - now using .progress-bar-thumb element instead of ::after */
+
+/* Unused but kept for compatibility */
+.player-container .progress-bar-thumb {
+    position: absolute;
+    left: 0%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    background-color: var(--text-normal);
+    border: 2px solid var(--background-primary);
+    border-radius: 50%;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    pointer-events: none;
+    transition: left 0.1s linear;
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+.hidden {
+    display: none !important;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.text-small {
+    font-size: var(--font-ui-smaller);
+}
+
+/* ==========================================================================
+   Sidebar Mode Toggle (Podcasts/Playlists)
+   ========================================================================== */
+
+.sidebar-mode-toggle {
+    display: flex;
+    gap: var(--size-4-2);
+    margin-bottom: var(--size-4-3);
+    padding: 0 var(--size-4-2);
+}
+
+.sidebar-mode-toggle button {
+    flex: 1;
+    padding: var(--size-4-2) var(--size-4-3);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.sidebar-mode-toggle button.mode-active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.sidebar-mode-toggle button.mode-inactive {
+    background-color: var(--background-secondary);
+    color: var(--text-muted);
+}
+
+.sidebar-mode-toggle button.mode-inactive:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+/* ==========================================================================
+   Playlist List
+   ========================================================================== */
+
+.playlist-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--size-4-3);
+    padding: var(--size-4-3);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: var(--size-4-2);
+}
+
+.playlist-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.playlist-play-button {
+    background: transparent;
+    border: none;
+    padding: var(--size-4-2);
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-s);
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.playlist-play-button:hover {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.playlist-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.playlist-item-title {
+    font-weight: 600;
+    margin: 0 0 var(--size-4-1) 0;
+}
+
+.playlist-item-description {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    margin: 0 0 var(--size-4-2) 0;
+}
+
+.playlist-item-metadata {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    display: flex;
+    gap: var(--size-4-2);
+}
+
+/* ==========================================================================
+   Playlist Episode List
+   ========================================================================== */
+
+.playlist-episode-item {
+    display: flex;
+    align-items: center;
+    padding: var(--size-4-2);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    gap: var(--size-4-3);
+    border: 1px solid var(--background-modifier-border);
+    margin-bottom: var(--size-4-1);
+}
+
+.playlist-episode-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.playlist-episode-index {
+    min-width: 30px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.playlist-episode-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.playlist-episode-title {
+    font-weight: 500;
+    margin: 0 0 var(--size-4-1) 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.playlist-episode-duration {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Queue Section
+   ========================================================================== */
+
+.queue-section {
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-4);
+    border-top: 1px solid var(--background-modifier-border);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--size-4-3);
+}
+
+.queue-title {
+    margin: 0;
+    font-size: var(--font-ui-medium);
+    font-weight: 600;
+}
+
+.queue-controls {
+    display: flex;
+    gap: var(--size-4-2);
+    margin-bottom: var(--size-4-3);
+}
+
+.queue-control-btn {
+    padding: var(--size-4-2) var(--size-4-3);
+    border-radius: var(--radius-s);
+    background-color: var(--background-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+.queue-control-btn:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.queue-control-btn.active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+/* ==========================================================================
+   Queue Episode List
+   ========================================================================== */
+
+.queue-episode-list {
+    background-color: var(--background-secondary);
+    border-radius: var(--radius-m);
+    padding: var(--size-4-3);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.queue-info {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    margin-bottom: var(--size-4-3);
+    padding-bottom: var(--size-4-2);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.queue-episodes {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-1);
+    max-height: calc(100vh - 450px);
+    min-height: 200px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.queue-episode-item {
+    display: flex;
+    align-items: center;
+    padding: var(--size-4-2);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    gap: var(--size-4-2);
+}
+
+.queue-episode-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.queue-episode-item.current {
+    background-color: var(--background-modifier-active-hover);
+}
+
+.queue-episode-index {
+    min-width: 24px;
+    text-align: center;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.queue-episode-item.current .queue-episode-index {
+    color: var(--interactive-accent);
+}
+
+.queue-episode-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.queue-episode-title {
+    font-size: var(--font-ui-small);
+    margin-bottom: var(--size-4-1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.queue-episode-duration {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+.queue-more {
+    text-align: center;
+    padding: var(--size-4-2);
+    margin-top: var(--size-4-2);
+}
+
+.queue-more-text {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   Empty States
+   ========================================================================== */
+
+.empty-state {
+    text-align: center;
+    padding: var(--size-4-4);
+    color: var(--text-muted);
+    pointer-events: none !important;
+}
+
+.empty-state-hint {
+    font-size: var(--font-ui-smaller);
+    margin-top: var(--size-4-2);
+}
+
+.queue-empty-state {
+    text-align: center;
+    padding: var(--size-4-4);
+    color: var(--text-muted);
+    pointer-events: none !important;
+}
+
+.queue-empty-hint {
+    font-size: var(--font-ui-smaller);
+    margin-top: var(--size-4-2);
+}
+
+.queue-error-state {
+    text-align: center;
+    padding: var(--size-4-4);
+    color: var(--text-error);
+}
+
+/* ==========================================================================
+   Episode Item Layout Fix - Ensures buttons appear on the right side
+   ========================================================================== */
+
+.episode-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: var(--size-4-3) !important;
+    padding: var(--size-4-2) !important;
+    border-radius: var(--radius-s) !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.episode-item:hover {
+    background-color: var(--background-modifier-hover) !important;
+}
+
+.episode-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--size-4-1) !important;
+}
+
+.episode-metadata {
+    display: flex !important;
+    gap: var(--size-4-1) !important;
+    font-size: var(--font-ui-smaller) !important;
+    color: var(--text-muted) !important;
+}
+
+.episode-item-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-1) !important;
+    flex-shrink: 0 !important;
+}
+
+/* ==========================================================================
+   Podcast Item Layout (Feed List)
+   ========================================================================== */
+
+.podcast-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: var(--size-4-3) !important;
+    padding: var(--size-4-2) !important;
+    border-radius: var(--radius-s) !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.podcast-item:hover {
+    background-color: var(--background-modifier-hover) !important;
+}
+
+.podcast-image {
+    width: 50px !important;
+    height: 50px !important;
+    object-fit: cover !important;
+    border-radius: var(--radius-s) !important;
+    flex-shrink: 0 !important;
+}
+
+.podcast-image-placeholder {
+    width: 50px !important;
+    height: 50px !important;
+    background-color: var(--background-secondary) !important;
+    border-radius: var(--radius-s) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+.podcast-image-placeholder svg {
+    width: 24px !important;
+    height: 24px !important;
+    color: var(--text-muted) !important;
+}
+
+.podcast-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--size-4-1) !important;
+}
+
+.podcast-title {
+    font-weight: 600 !important;
+    margin: 0 !important;
+    font-size: var(--font-ui-medium) !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.podcast-author {
+    font-size: var(--font-ui-smaller) !important;
+    color: var(--text-muted) !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.podcast-episode-count {
+    font-size: var(--font-ui-smaller) !important;
+    color: var(--text-muted) !important;
+}
+
+/* Player View Thumbnail */
+.player-podcast-thumbnail {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-m);
+    object-fit: cover;
+    margin-bottom: var(--size-4-2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.episode-info-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+/* Episode Detail Modal */
+.episode-detail-modal-container {
+    width: 800px !important;
+    max-width: 90vw !important;
+}
+
+/* ==========================================================================
+   Sidebar Header Layout
+   ========================================================================== */
+
+.sidebar-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: var(--size-4-2) var(--size-4-3) !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.sidebar-title {
+    font-size: var(--font-ui-medium) !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+}
+
+.sidebar-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-2) !important;
+    flex-shrink: 0 !important;
+}
+
+.sidebar-action-button {
+    background: transparent !important;
+    border: none !important;
+    padding: var(--size-4-1) !important;
+    cursor: pointer !important;
+    color: var(--text-muted) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: var(--radius-s) !important;
+    transition: all 0.2s !important;
+}
+
+.sidebar-action-button:hover {
+    background-color: var(--background-modifier-hover) !important;
+    color: var(--text-normal) !important;
+}
+
+.sidebar-back-button {
+    margin-bottom: var(--size-4-2) !important;
+}
+
+/* ==========================================================================
+   Sidebar Search Layout
+   ========================================================================== */
+
+.sidebar-search-container {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-2) !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.sidebar-search-input {
+    flex: 1 !important;
+}
+
+.sidebar-search-button {
+    flex-shrink: 0 !important;
+}
+
+/* ==========================================================================
+   Sidebar Sort Layout
+   ========================================================================== */
+
+.sidebar-sort-container {
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin-bottom: var(--size-4-2) !important;
+}
+
+.sort-direction-button {
+    background: transparent !important;
+    border: none !important;
+    padding: var(--size-4-1) !important;
+    cursor: pointer !important;
+    color: var(--text-muted) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: var(--radius-s) !important;
+}
+
+.sort-direction-button:hover {
+    background-color: var(--background-modifier-hover) !important;
+    color: var(--text-normal) !important;
+}
+
+/* ==========================================================================
+   Episode Detail Modal Layout
+   ========================================================================== */
+
+.episode-detail-modal {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.episode-detail-header {
+    text-align: center;
+    margin-bottom: var(--size-4-4);
+}
+
+.episode-detail-image {
+    max-width: 200px !important;
+    max-height: 200px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    border-radius: var(--radius-m) !important;
+    margin: 0 auto var(--size-4-3) auto !important;
+    display: block !important;
+}
+
+.episode-detail-title {
+    margin-top: var(--size-4-2) !important;
+    margin-bottom: 0 !important;
+}
+
+.episode-detail-section {
+    margin-bottom: var(--size-4-4);
+}
+
+.episode-detail-section h3 {
+    margin-top: 0;
+    margin-bottom: var(--size-4-2);
+    font-size: var(--font-ui-medium);
+    font-weight: 600;
+}
+
+.episode-detail-section h4 {
+    margin-top: var(--size-4-3);
+    margin-bottom: var(--size-4-2);
+    font-size: var(--font-ui-small);
+    font-weight: 600;
+}
+
+.episode-detail-row {
+    margin-bottom: var(--size-4-1);
+}
+
+.episode-detail-label {
+    font-weight: 600;
+    margin-right: var(--size-4-1);
+}
+
+.episode-detail-description {
+    line-height: 1.6;
+    max-height: calc(100vh - 450px);
+    min-height: 200px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.episode-detail-progress-container {
+    margin: var(--size-4-2) 0;
+}
+
+.episode-detail-progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    overflow: hidden;
+    margin-bottom: var(--size-4-1);
+}
+
+.episode-detail-progress-fill {
+    height: 100%;
+    background-color: var(--interactive-accent);
+    transition: width 0.3s ease;
+}
+
+.episode-detail-progress-text {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+.episode-detail-completed {
+    color: var(--text-success);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--size-4-1);
+}
+
+.episode-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--size-4-2);
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.episode-detail-actions button {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* ==========================================================================
+   Episode List Spacing Fix
+   ========================================================================== */
+
+.episode-item {
+    margin-bottom: var(--size-4-1) !important;
+    /* Reduced spacing between episodes */
+    padding: var(--size-4-2) !important;
+}
+
+/* Also ensure the list container doesn't add extra gap if it's a flex container */
+.episode-list-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--size-4-1) !important;
+    /* Reduced gap */
+}
+
+/* ==========================================================================
+   Episode List Compact Spacing Fix (Retry)
+   ========================================================================== */
+
+.episode-item {
+    margin-bottom: var(--size-4-1) !important;
+    padding: var(--size-4-1) !important;
+    /* Reduced padding from size-4-2 to size-4-1 */
+    gap: var(--size-4-1) !important;
+    /* Reduce internal gap between elements */
+}
+
+.episode-list-container {
+    gap: 2px !important;
+    /* Even smaller gap between items */
+}
+
+.episode-info h4.episode-title {
+    margin-bottom: 2px !important;
+    /* Tighter title spacing */
+}
+
+.episode-metadata {
+    margin-top: 0 !important;
+}
+
+.episode-item-actions {
+    margin-top: var(--size-4-1) !important;
+    /* Tighter actions spacing */
+}
+
+/* ==========================================================================
+   Header Layout Fix - Back Button on Same Row as Title
+   ========================================================================== */
+
+.sidebar-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: var(--size-4-2) var(--size-4-3) !important;
+    margin-bottom: var(--size-4-2) !important;
+    gap: var(--size-4-2) !important;
+    /* Add gap between back button and title */
+}
+
+.sidebar-back-button {
+    background: transparent !important;
+    border: none !important;
+    padding: var(--size-4-1) !important;
+    cursor: pointer !important;
+    color: var(--text-muted) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-1) !important;
+    border-radius: var(--radius-s) !important;
+    transition: background-color 0.2s !important;
+    margin-bottom: 0 !important;
+    /* Remove bottom margin since it's now inline */
+    flex-shrink: 0 !important;
+    /* Prevent button from shrinking */
+    pointer-events: auto !important;
+    /* Ensure button can receive click events */
+    position: relative !important;
+    z-index: 10 !important;
+    /* Ensure button is above other elements */
+}
+
+.sidebar-back-button:hover {
+    background-color: var(--background-modifier-hover) !important;
+    color: var(--text-normal) !important;
+}
+
+.sidebar-title {
+    flex: 1 !important;
+    /* Allow title to take remaining space */
+    margin: 0 !important;
+    font-size: var(--font-ui-medium) !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.sidebar-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: var(--size-4-2) !important;
+    flex-shrink: 0 !important;
+}
+
+/* ==========================================================================
+   Player View Layout Fix - Center Playback Controls
+   ========================================================================== */
+
+.playback-controls-section {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: var(--size-4-3) !important;
+    padding: var(--size-4-4) 0 !important;
+    margin: var(--size-4-3) 0 !important;
+}
+
+.player-button {
+    background: var(--background-secondary) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 48px !important;
+    height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    color: var(--text-normal) !important;
+}
+
+.player-button:hover {
+    background: var(--background-modifier-hover) !important;
+    transform: scale(1.05) !important;
+}
+
+.player-button-play-pause {
+    width: 64px !important;
+    height: 64px !important;
+    background: var(--interactive-accent) !important;
+    color: var(--text-on-accent) !important;
+}
+
+.player-button-play-pause:hover {
+    background: var(--interactive-accent-hover) !important;
+    transform: scale(1.1) !important;
+}
+
+.player-button svg {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+.player-button-play-pause svg {
+    width: 28px !important;
+    height: 28px !important;
+}
+
+/* Hide queue controls section since we removed shuffle and repeat */
+.queue-controls {
+    display: none !important;
+}
+
+/* ==========================================================================
+   Player View Layout Fix - Smaller Centered Playback Controls
+   ========================================================================== */
+
+.playback-controls-section {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: var(--size-4-2) !important;
+    /* Reduced gap */
+    padding: var(--size-4-3) 0 !important;
+    /* Reduced padding */
+    margin: var(--size-4-2) 0 !important;
+    /* Reduced margin */
+}
+
+.player-button {
+    background: var(--background-secondary) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    /* Reduced from 48px */
+    height: 36px !important;
+    /* Reduced from 48px */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    color: var(--text-normal) !important;
+}
+
+.player-button:hover {
+    background: var(--background-modifier-hover) !important;
+    transform: scale(1.05) !important;
+}
+
+.player-button-play-pause {
+    width: 48px !important;
+    /* Reduced from 64px */
+    height: 48px !important;
+    /* Reduced from 64px */
+    background: var(--interactive-accent) !important;
+    color: var(--text-on-accent) !important;
+}
+
+.player-button-play-pause:hover {
+    background: var(--interactive-accent-hover) !important;
+    transform: scale(1.1) !important;
+}
+
+.player-button svg {
+    width: 16px !important;
+    /* Reduced from 20px */
+    height: 16px !important;
+    /* Reduced from 20px */
+}
+
+.player-button-play-pause svg {
+    width: 22px !important;
+    /* Reduced from 28px */
+    height: 22px !important;
+    /* Reduced from 28px */
+}
+
+/* Hide queue controls section since we removed shuffle and repeat */
+.queue-controls {
+    display: none !important;
+}
+
+/* ==========================================================================
+   Advanced Controls (Volume & Speed)
+   ========================================================================== */
+
+.advanced-controls-section {
+    display: flex;
+    flex-direction: row;
+    gap: var(--size-4-4);
+    margin-top: var(--size-4-2);
+    padding: 0 var(--size-4-2);
+}
+
+.control-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+    min-width: 0;
+    /* Prevent flex item from overflowing */
+}
+
+.control-icon {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.control-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.control-slider {
+    flex: 1;
+    width: 100%;
+    cursor: pointer;
+    accent-color: var(--interactive-accent);
+    height: 4px;
+    min-width: 50px;
+    /* Minimum width for usability */
+}
+
+.control-value-label {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    min-width: 32px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+/* Custom Range Slider Styling (Optional but nice) */
+.control-slider {
+    -webkit-appearance: none;
+    background: transparent;
+}
+
+.control-slider::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    background: var(--background-modifier-border);
+    border: 1px solid var(--text-muted);
+    border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+    box-shadow: 1px 1px 0px var(--text-muted);
+}
+
+.control-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    background: var(--text-normal);
+    border: 1px solid var(--background-primary);
+    margin-top: -3px;
+    /* Center thumb on track */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: transform 0.1s;
+}
+
+.control-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.15);
+    background: var(--interactive-accent);
+}
+
+/* ==========================================================================
+   Progress Section Layout
+   ========================================================================== */
+
+.progress-section {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-3);
+    margin-bottom: var(--size-4-6);
+    padding: 0 var(--size-4-2);
+}
+
+.current-time,
+.total-time {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 40px;
+    flex-shrink: 0;
+}
+
+.current-time {
+    text-align: right;
+}
+
+.total-time {
+    text-align: left;
+}
+
+.progress-bar-container {
+    flex: 1;
+    margin: 0 !important;
+}
+
+/* ==========================================================================
+   Subscribe Modal Search Results
+   ========================================================================== */
+
+.subscribe-result-item {
+    display: flex;
+    align-items: center;
+    padding: var(--size-4-2);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    margin-bottom: var(--size-4-2);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    gap: var(--size-4-3);
+}
+
+.subscribe-result-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.subscribe-result-item.selected {
+    background-color: var(--background-modifier-active-hover);
+    border-color: var(--interactive-accent);
+}
+
+.subscribe-result-artwork {
+    width: 40px !important;
+    /* Smaller thumbnail size */
+    height: 40px !important;
+    border-radius: var(--radius-s);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.subscribe-result-artwork-placeholder {
+    width: 40px !important;
+    height: 40px !important;
+    background-color: var(--background-secondary);
+    border-radius: var(--radius-s);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.subscribe-result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.subscribe-result-title {
+    margin: 0 0 2px 0;
+    font-size: var(--font-ui-small);
+    font-weight: 600;
+}
+
+.subscribe-result-author {
+    margin: 0;
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+.subscribe-result-checkbox-container {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--size-4-1);
+}
+
+.subscribe-result-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   Progress Tooltip
+   ========================================================================== */
+
+.progress-tooltip {
+    position: absolute;
+    bottom: -28px;
+    left: 0%;
+    transform: translateX(-50%);
+    background-color: var(--background-primary);
+    color: var(--text-normal);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.progress-bar-container:hover .progress-tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ==========================================================================
+   Queue Episode Item Actions - Drag/Play Toggle
+   ========================================================================== */
+
+.queue-episode-action {
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+/* Default: Show drag icon, hide play icon */
+.queue-episode-action .icon-drag {
+    display: flex;
+}
+
+.queue-episode-action .icon-play {
+    display: none;
+}
+
+/* On hover: Hide drag icon, show play icon */
+.queue-episode-item:hover .queue-episode-action .icon-drag {
+    display: none;
+}
+
+.queue-episode-item:hover .queue-episode-action .icon-play {
+    display: flex;
+    color: var(--text-normal);
+    cursor: pointer;
+}
+
+.queue-episode-item:hover .queue-episode-action .icon-play:hover {
+    color: var(--interactive-accent);
+}
+
+/* Current episode icon */
+.queue-episode-action .icon-current {
+    color: var(--interactive-accent);
+}
+
+/* ==========================================================================
+   Queue and Playlist Sections in Sidebar
+   ========================================================================== */
+
+.queue-section-sidebar,
+.playlist-section-sidebar {
+    margin-bottom: var(--size-4-4);
+}
+
+.section-title {
+    font-size: var(--font-ui-small);
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 var(--size-4-2) 0;
+    padding: 0 var(--size-4-1);
+}
+
+.queue-item {
+    background-color: var(--background-secondary-alt);
+    border-color: var(--interactive-accent);
+    border-left: 3px solid var(--interactive-accent);
+}
+
+/* ==========================================================================
+   All Episodes View
+   ========================================================================== */
+
+.all-episodes-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--size-4-2) var(--size-4-3);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: background-color 0.2s;
+    gap: var(--size-4-3);
+}
+
+.all-episodes-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.episode-podcast-name {
+    color: var(--interactive-accent);
+    font-weight: 500;
+}
+
+.episode-meta-separator {
+    color: var(--text-muted);
+}
+
+.episode-play-button {
+    background: transparent;
+    border: none;
+    padding: var(--size-4-2);
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-s);
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.episode-play-button:hover {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.episode-actions {
+    display: flex;
+    gap: var(--size-4-1);
+    flex-shrink: 0;
+}
+
+.episode-action-button {
+    background: transparent;
+    border: none;
+    padding: var(--size-4-1);
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-s);
+    transition: all 0.2s;
+    width: 28px;
+    height: 28px;
+}
+
+.episode-action-button:hover {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+/* Drag and Drop */
+.playlist-episode-item.dragging {
+    opacity: 0.5;
+    border: 2px dashed var(--interactive-accent);
+}
+
+.playlist-episode-item.drag-over {
+    border-top: 2px solid var(--interactive-accent);
+}
+
+/* ==========================================================================
+   Subscribe Modal Tabs
+   ========================================================================== */
+
+.subscribe-modal-tabs {
+    display: flex;
+    gap: var(--size-4-2);
+    margin-bottom: var(--size-4-4);
+    border-bottom: 1px solid var(--background-modifier-border);
+    padding-bottom: var(--size-4-2);
+}
+
+.subscribe-modal-tab {
+    background: transparent;
+    border: none;
+    padding: var(--size-4-2) var(--size-4-4);
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-muted);
+    border-radius: var(--radius-s);
+    transition: all 0.2s;
+}
+
+.subscribe-modal-tab:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.subscribe-modal-tab.active {
+    background-color: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.subscribe-url-desc {
+    color: var(--text-muted);
+    margin-bottom: var(--size-4-4);
+}
+
+/* ==========================================================================
+   Subscribe Modal Layout & Search
+   ========================================================================== */
+
+.subscribe-modal-content {
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.subscribe-search-container {
+    display: flex;
+    gap: var(--size-4-2);
+    align-items: center;
+    margin-bottom: var(--size-4-4);
+}
+
+.subscribe-search-input {
+    flex: 1;
+    height: 36px;
+}
+
+.subscribe-search-button {
+    height: 36px;
+    padding: 0 var(--size-4-3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.subscribe-search-button svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ==========================================================================
+   Fix for Lists tab font sizes to match Feeds tab
+   ========================================================================== */
+
+.playlist-title,
+.queue-title,
+.playlist-item-title,
+.playlist-episode-title,
+.queue-episode-title {
+    font-size: var(--font-ui-medium) !important;
+    font-weight: 600 !important;
+}
+
+.playlist-description,
+.playlist-item-description,
+.playlist-metadata,
+.playlist-item-metadata,
+.playlist-episode-duration,
+.queue-episode-duration {
+    font-size: var(--font-ui-smaller) !important;
+    color: var(--text-muted) !important;
+}
+
+/* ==========================================================================
+   Compact Lists View (User Request)
+   ========================================================================== */
+
+.playlist-item {
+    padding: var(--size-4-2) !important;
+    min-height: auto !important;
+}
+
+.playlist-title,
+.queue-title,
+.playlist-item-title {
+    font-size: var(--font-ui-small) !important;
+    margin-bottom: 2px !important;
+}
+
+.playlist-description,
+.playlist-item-description,
+.playlist-metadata,
+.playlist-item-metadata {
+    font-size: var(--font-ui-smaller) !important;
+}
+
+/* ==========================================================================
+   Subscribe Modal Pagination
+   ========================================================================== */
+
+.subscribe-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--size-4-4);
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.subscribe-pagination-button {
+    background: transparent;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-normal);
+    transition: all 0.2s;
+}
+
+.subscribe-pagination-button:hover:not(:disabled) {
+    background-color: var(--background-modifier-hover);
+    border-color: var(--interactive-accent);
+    color: var(--interactive-accent);
+}
+
+.subscribe-pagination-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.subscribe-pagination-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.subscribe-pagination-info {
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    min-width: 100px;
+    text-align: center;
+}
+
+/* ==========================================================================
+   Subscribe Modal Search Buttons
+   ========================================================================== */
+
+.subscribe-search-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--size-4-2);
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.subscribe-search-buttons button {
+    min-width: 80px;
+}
+
+.subscribe-search-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Subscribe Modal File Import (OPML)
+   ========================================================================== */
+
+.subscribe-file-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-3);
+}
+
+.subscribe-file-desc {
+    color: var(--text-muted);
+    margin: 0 0 var(--size-4-2) 0;
+}
+
+.subscribe-file-input-container {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+}
+
+.subscribe-file-input {
+    display: none;
+}
+
+.subscribe-file-select-button {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+    padding: var(--size-4-2) var(--size-4-4);
+    cursor: pointer;
+}
+
+.subscribe-file-select-button svg {
+    width: 18px;
+    height: 18px;
+}
+
+.subscribe-file-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--size-4-2);
+    margin-top: var(--size-4-4);
+    padding-top: var(--size-4-3);
+    border-top: 1px solid var(--background-modifier-border);
+}
+
+.subscribe-file-buttons button {
+    min-width: 80px;
+}
+
+.subscribe-file-buttons button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* OPML Results */
+.subscribe-opml-results {
+    flex: 1;
+    min-height: 0;
+}
+
+.subscribe-opml-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--size-4-2) 0;
+    margin-bottom: var(--size-4-2);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.subscribe-opml-count {
+    font-weight: 600;
+    color: var(--text-normal);
+}
+
+.subscribe-opml-header-actions {
+    display: flex;
+    gap: var(--size-4-2);
+}
+
+.subscribe-opml-action-btn {
+    font-size: var(--font-ui-smaller);
+    padding: var(--size-4-1) var(--size-4-2);
+    background: transparent;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.subscribe-opml-action-btn:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.subscribe-opml-list {
+    max-height: 300px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-1);
+}
+
+.subscribe-opml-item {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+    padding: var(--size-4-2);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.subscribe-opml-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.subscribe-opml-item.selected {
+    background-color: var(--background-modifier-active-hover);
+    border-color: var(--interactive-accent);
+}
+
+.subscribe-opml-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.subscribe-opml-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.subscribe-opml-title {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.subscribe-opml-url {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Player Info Button
+   ========================================================================== */
+
+.episode-title-container {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+}
+
+.episode-title-container .episode-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.player-info-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-s);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.player-info-button:hover {
+    background-color: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.player-info-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ==========================================================================
+   Add Note Modal
+   ========================================================================== */
+
+.add-note-modal {
+    padding: var(--size-4-4);
+}
+
+.add-note-modal h2 {
+    margin-top: 0;
+    margin-bottom: var(--size-4-4);
+}
+
+.add-note-context {
+    background-color: var(--background-secondary);
+    border-radius: var(--radius-m);
+    padding: var(--size-4-3);
+    margin-bottom: var(--size-4-4);
+}
+
+.add-note-context p {
+    margin: var(--size-4-1) 0;
+    font-size: var(--font-ui-small);
+}
+
+.add-note-podcast {
+    color: var(--text-muted);
+}
+
+.add-note-episode {
+    color: var(--text-normal);
+    font-weight: var(--font-medium);
+}
+
+.add-note-timestamp {
+    color: var(--text-accent);
+    font-family: var(--font-monospace);
+}
+
+.add-note-input-container {
+    margin-bottom: var(--size-4-4);
+}
+
+.add-note-label {
+    display: block;
+    margin-bottom: var(--size-4-2);
+    font-weight: var(--font-medium);
+}
+
+.add-note-textarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+}
+
+.add-note-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--size-4-2);
+}
+
+/* Add Note Button in Player */
+.player-button-add-note {
+    margin-left: var(--size-4-2);
+}

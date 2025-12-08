@@ -436,7 +436,7 @@ export class PlayerView extends ItemView {
 	 * Handle play/pause button click
 	 */
 	private async handlePlayPause(): Promise<void> {
-		console.log('PlayerView: Play/Pause clicked');
+
 		try {
 			if (!this.plugin) {
 				console.error('PlayerView: Plugin instance is missing');
@@ -449,7 +449,7 @@ export class PlayerView extends ItemView {
 
 			const playerController = this.plugin.playerController;
 			const state = playerController.getState();
-			console.log('PlayerView: Current state', state);
+
 
 			if (state.status === 'playing') {
 				await playerController.pause();
@@ -475,7 +475,7 @@ export class PlayerView extends ItemView {
 			const allQueues = await queueManager.getAllQueues();
 
 			if (allQueues.length === 0) {
-				console.log('No queues available');
+
 				return;
 			}
 
@@ -495,7 +495,7 @@ export class PlayerView extends ItemView {
 				}
 			}
 
-			console.log('No episodes in any queue');
+
 		} catch (error) {
 			console.error('Failed to play from first queue:', error);
 		}
@@ -519,7 +519,7 @@ export class PlayerView extends ItemView {
 
 			// Fallback to queue navigation
 			if (!this.currentQueueId) {
-				console.log('No queue selected');
+
 				return;
 			}
 
@@ -553,7 +553,7 @@ export class PlayerView extends ItemView {
 
 			// Fallback to queue navigation
 			if (!this.currentQueueId) {
-				console.log('No queue selected');
+
 				return;
 			}
 
@@ -600,7 +600,7 @@ export class PlayerView extends ItemView {
 			podcast,
 			currentPosition,
 			(note: string) => {
-				console.log('Note added:', note);
+
 			}
 		).open();
 	}

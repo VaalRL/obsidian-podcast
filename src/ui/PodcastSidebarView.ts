@@ -183,14 +183,14 @@ export class PodcastSidebarView extends ItemView {
 		setIcon(searchBtn, 'search');
 
 		const performSearch = () => {
-			console.log('Performing search with query:', searchInput.value);
+
 			this.searchQuery = searchInput.value;
 			this.render();
 		};
 
 		// Handle search button click
 		searchBtn.addEventListener('click', (e) => {
-			console.log('Search button clicked');
+
 			performSearch();
 		});
 
@@ -198,7 +198,7 @@ export class PodcastSidebarView extends ItemView {
 		searchInput.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') {
 				e.preventDefault(); // Prevent default form submission if any
-				console.log('Enter key pressed');
+
 				performSearch();
 			}
 		});
@@ -211,7 +211,7 @@ export class PodcastSidebarView extends ItemView {
 			});
 			setIcon(clearBtn, 'x');
 			clearBtn.addEventListener('click', () => {
-				console.log('Clear search clicked');
+
 				this.searchQuery = '';
 				this.render();
 			});
@@ -316,7 +316,7 @@ export class PodcastSidebarView extends ItemView {
 			backBtn.addEventListener('click', (e) => {
 				e.preventDefault();
 				e.stopPropagation();
-				console.log('Back button clicked'); // Debug log
+
 				this.selectedPodcast = null;
 				this.selectedPlaylist = null;
 				this.selectedQueue = null;
@@ -799,7 +799,7 @@ export class PodcastSidebarView extends ItemView {
 			this.plugin,
 			async (podcastId) => {
 				// Callback after successful subscription
-				console.log(`Successfully subscribed to podcast: ${podcastId}`);
+
 				// Refresh the view to show the new podcast
 				await this.render();
 			}
@@ -1081,7 +1081,7 @@ export class PodcastSidebarView extends ItemView {
 				.setTitle('Refresh Feed')
 				.setIcon('refresh-cw')
 				.onClick(() => {
-					console.log('Refresh feed:', podcast.title);
+
 					// TODO: Refresh this podcast's feed
 				})
 		);
@@ -1093,7 +1093,7 @@ export class PodcastSidebarView extends ItemView {
 				.setTitle('Unsubscribe')
 				.setIcon('trash')
 				.onClick(() => {
-					console.log('Unsubscribe:', podcast.title);
+
 					// TODO: Unsubscribe from podcast
 				})
 		);
@@ -1134,7 +1134,7 @@ export class PodcastSidebarView extends ItemView {
 						[episode],
 						(queueId) => {
 							// Callback after adding to queue
-							console.log(`Added episode to queue: ${queueId}`);
+
 						}
 					).open();
 				})
@@ -1151,7 +1151,7 @@ export class PodcastSidebarView extends ItemView {
 						[episode],
 						(playlistId) => {
 							// Callback after adding to playlist
-							console.log(`Added episode to playlist: ${playlistId}`);
+
 						}
 					).open();
 				})

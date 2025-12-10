@@ -199,7 +199,7 @@ export class EpisodeDetailModal extends Modal {
 		const progressBar = progressBarContainer.createDiv({ cls: 'episode-detail-progress-bar' });
 		const progressFill = progressBar.createDiv({ cls: 'episode-detail-progress-fill' });
 		const percentage = (this.progress.position / this.episode.duration) * 100;
-		progressFill.setAttribute('style', `width: ${percentage}%`);
+		progressFill.setCssProps({ width: `${percentage}%` });
 
 		// Completion percentage
 		const percentageText = progressBarContainer.createSpan({

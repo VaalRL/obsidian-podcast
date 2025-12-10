@@ -116,7 +116,7 @@ export class EpisodeDetailModal extends Modal {
 		const { contentEl } = this;
 		const section = contentEl.createDiv({ cls: 'episode-detail-section' });
 
-		section.createEl('h3', { text: 'Episode Information' });
+		section.createEl('h3', { text: 'Episode information' });
 
 		// Duration
 		if (this.episode.duration) {
@@ -148,7 +148,7 @@ export class EpisodeDetailModal extends Modal {
 		if (this.episode.description) {
 			section.createEl('h4', { text: 'Description', cls: 'episode-detail-subsection' });
 			const descriptionEl = section.createDiv({ cls: 'episode-detail-description' });
-			descriptionEl.innerHTML = this.formatDescription(this.episode.description);
+			this.renderDescription(descriptionEl, this.episode.description);
 		}
 	}
 
@@ -185,7 +185,7 @@ export class EpisodeDetailModal extends Modal {
 		const { contentEl } = this;
 		const section = contentEl.createDiv({ cls: 'episode-detail-section' });
 
-		section.createEl('h3', { text: 'Playback Progress' });
+		section.createEl('h3', { text: 'Playback progress' });
 
 		// Current position
 		const positionRow = section.createDiv({ cls: 'episode-detail-row' });
@@ -199,7 +199,7 @@ export class EpisodeDetailModal extends Modal {
 		const progressBar = progressBarContainer.createDiv({ cls: 'episode-detail-progress-bar' });
 		const progressFill = progressBar.createDiv({ cls: 'episode-detail-progress-fill' });
 		const percentage = (this.progress.position / this.episode.duration) * 100;
-		progressFill.style.width = `${percentage}%`;
+		progressFill.setAttribute('style', `width: ${percentage}%`);
 
 		// Completion percentage
 		const percentageText = progressBarContainer.createSpan({
@@ -326,14 +326,29 @@ export class EpisodeDetailModal extends Modal {
 	}
 
 	/**
-	 * Format description (convert HTML to safe display)
+	 * Render description content safely without innerHTML
 	 */
-	private formatDescription(description: string): string {
-		// Basic HTML sanitization - keep only safe tags
-		// In production, you might want to use a proper HTML sanitizer library
-		return description
+	private renderDescription(container: HTMLElement, description: string): void {
+		// Strip HTML tags and render as plain text for safety
+		const plainText = description
 			.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-			.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+			.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+			.replace(/<[^>]*>/g, '')
+			.replace(/&nbsp;/g, ' ')
+			.replace(/&amp;/g, '&')
+			.replace(/&lt;/g, '<')
+			.replace(/&gt;/g, '>')
+			.replace(/&quot;/g, '"')
+			.replace(/&#39;/g, "'")
+			.trim();
+
+		// Split by paragraphs and create proper elements
+		const paragraphs = plainText.split(/\n\n+/);
+		for (const para of paragraphs) {
+			if (para.trim()) {
+				container.createEl('p', { text: para.trim() });
+			}
+		}
 	}
 
 	onClose() {

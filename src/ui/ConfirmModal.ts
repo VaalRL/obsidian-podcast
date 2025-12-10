@@ -50,15 +50,13 @@ export class ConfirmModal extends Modal {
 		contentEl.createEl('h2', { text: this.options.title });
 
 		// Message
-		const messageEl = contentEl.createEl('p', { cls: 'confirm-modal-message' });
-		messageEl.style.whiteSpace = 'pre-wrap';
+		const messageEl = contentEl.createEl('p', { cls: 'confirm-modal-message podcast-confirm-message' });
 		messageEl.setText(this.options.message);
 
 		// Input field if required
 		let inputEl: HTMLInputElement | null = null;
 		if (this.options.requireInput) {
-			const inputContainer = contentEl.createDiv({ cls: 'confirm-modal-input' });
-			inputContainer.style.marginTop = '16px';
+			const inputContainer = contentEl.createDiv({ cls: 'confirm-modal-input podcast-confirm-input-container' });
 
 			inputContainer.createEl('p', {
 				text: `Type "${this.options.requireInput}" to confirm:`,
@@ -78,16 +76,11 @@ export class ConfirmModal extends Modal {
 					inputEl = text.inputEl;
 				});
 
-			inputSetting.settingEl.style.border = 'none';
-			inputSetting.settingEl.style.padding = '0';
+			inputSetting.settingEl.addClass('podcast-confirm-input-setting');
 		}
 
 		// Buttons
-		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-		buttonContainer.style.display = 'flex';
-		buttonContainer.style.justifyContent = 'flex-end';
-		buttonContainer.style.gap = '10px';
-		buttonContainer.style.marginTop = '20px';
+		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container podcast-modal-button-container' });
 
 		new ButtonComponent(buttonContainer)
 			.setButtonText(this.options.cancelText!)

@@ -53,7 +53,13 @@ export class AddToQueueModal extends Modal {
 						// Show/hide new queue name input
 						const newQueueSetting = contentEl.querySelector('.new-queue-setting') as HTMLElement;
 						if (newQueueSetting) {
-							newQueueSetting.style.display = selectedQueueId ? 'none' : 'block';
+							if (selectedQueueId) {
+								newQueueSetting.addClass('podcast-display-none');
+								newQueueSetting.removeClass('podcast-display-block');
+							} else {
+								newQueueSetting.addClass('podcast-display-block');
+								newQueueSetting.removeClass('podcast-display-none');
+							}
 						}
 					});
 				});
@@ -72,7 +78,7 @@ export class AddToQueueModal extends Modal {
 
 		newQueueSetting.settingEl.addClass('new-queue-setting');
 		if (queues.length > 0 && selectedQueueId) {
-			newQueueSetting.settingEl.style.display = 'none';
+			newQueueSetting.settingEl.addClass('podcast-display-none');
 		}
 
 		// Episode info

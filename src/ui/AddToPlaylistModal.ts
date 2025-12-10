@@ -53,7 +53,13 @@ export class AddToPlaylistModal extends Modal {
 						// Show/hide new playlist inputs
 						const newPlaylistSettings = contentEl.querySelector('.new-playlist-settings') as HTMLElement;
 						if (newPlaylistSettings) {
-							newPlaylistSettings.style.display = selectedPlaylistId ? 'none' : 'block';
+							if (selectedPlaylistId) {
+								newPlaylistSettings.addClass('podcast-display-none');
+								newPlaylistSettings.removeClass('podcast-display-block');
+							} else {
+								newPlaylistSettings.addClass('podcast-display-block');
+								newPlaylistSettings.removeClass('podcast-display-none');
+							}
 						}
 					});
 				});
@@ -84,7 +90,7 @@ export class AddToPlaylistModal extends Modal {
 				}));
 
 		if (playlists.length > 0 && selectedPlaylistId) {
-			newPlaylistSettings.style.display = 'none';
+			newPlaylistSettings.addClass('podcast-display-none');
 		}
 
 		// Episode info

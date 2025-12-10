@@ -66,6 +66,7 @@ export class RSSParser {
 	private parser: Parser<RSSFeed, RSSItem>;
 
 	constructor() {
+		// Using type assertion because rss-parser's types don't properly support custom iTunes fields
 		this.parser = new Parser<RSSFeed, RSSItem>({
 			customFields: {
 				feed: [
@@ -74,7 +75,7 @@ export class RSSParser {
 					'itunes:summary',
 					'itunes:category',
 					'itunes:owner',
-				],
+				] as unknown as (keyof RSSFeed)[],
 				item: [
 					'itunes:image',
 					'itunes:duration',
@@ -83,9 +84,9 @@ export class RSSParser {
 					'itunes:episodeType',
 					'itunes:author',
 					'itunes:summary',
-				],
+				] as unknown as (keyof RSSItem)[],
 			},
-		} as any);
+		});
 	}
 
 	/**
@@ -156,7 +157,7 @@ export class RSSParser {
 		if (typeof feed.itunes?.image === 'string') {
 			imageUrl = feed.itunes.image;
 		} else if (feed.itunes?.image && typeof feed.itunes.image === 'object' && 'href' in feed.itunes.image) {
-			imageUrl = (feed.itunes.image as any).href;
+			imageUrl = (feed.itunes.image as { href: string }).href;
 		} else if (feed.image?.url) {
 			imageUrl = feed.image.url;
 		}
@@ -264,7 +265,7 @@ export class RSSParser {
 		if (typeof item.itunes?.image === 'string') {
 			imageUrl = item.itunes.image;
 		} else if (item.itunes?.image && typeof item.itunes.image === 'object' && 'href' in item.itunes.image) {
-			imageUrl = (item.itunes.image as any).href;
+			imageUrl = (item.itunes.image as { href: string }).href;
 		}
 
 		// Get file size

@@ -96,7 +96,8 @@ describe('Logger', () => {
 			logger.setLogLevel(LogLevel.DEBUG);
 			logger.info('Test info message', 'arg1');
 
-			expect(consoleInfoSpy).toHaveBeenCalledWith(
+			// Info uses console.debug per Obsidian plugin requirements
+			expect(consoleDebugSpy).toHaveBeenCalledWith(
 				'[Podcast Player] [INFO]',
 				'Test info message',
 				'arg1'
@@ -107,7 +108,8 @@ describe('Logger', () => {
 			logger.setLogLevel(LogLevel.INFO);
 			logger.info('Test info message');
 
-			expect(consoleInfoSpy).toHaveBeenCalledWith(
+			// Info uses console.debug per Obsidian plugin requirements
+			expect(consoleDebugSpy).toHaveBeenCalledWith(
 				'[Podcast Player] [INFO]',
 				'Test info message'
 			);
@@ -117,14 +119,20 @@ describe('Logger', () => {
 			logger.setLogLevel(LogLevel.WARN);
 			logger.info('Test info message');
 
-			expect(consoleInfoSpy).not.toHaveBeenCalled();
+			expect(consoleDebugSpy).not.toHaveBeenCalledWith(
+				expect.stringContaining('[INFO]'),
+				expect.anything()
+			);
 		});
 
 		it('should not log info message when level is ERROR', () => {
 			logger.setLogLevel(LogLevel.ERROR);
 			logger.info('Test info message');
 
-			expect(consoleInfoSpy).not.toHaveBeenCalled();
+			expect(consoleDebugSpy).not.toHaveBeenCalledWith(
+				expect.stringContaining('[INFO]'),
+				expect.anything()
+			);
 		});
 	});
 
@@ -292,8 +300,8 @@ describe('Logger', () => {
 			logger.warn('Warn message');
 			logger.error('Error message');
 
+			// Both debug() and info() use console.debug per Obsidian plugin requirements
 			expect(consoleDebugSpy).toHaveBeenCalled();
-			expect(consoleInfoSpy).toHaveBeenCalled();
 			expect(consoleWarnSpy).toHaveBeenCalled();
 			expect(consoleErrorSpy).toHaveBeenCalled();
 		});

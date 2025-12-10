@@ -7,7 +7,7 @@
  * - Quick playback controls
  */
 
-import { ItemView, WorkspaceLeaf, Menu, Notice, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Menu, Notice, setIcon, Events } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Podcast, Episode, Playlist, Queue } from '../model';
 import { EpisodeStatistics } from '../podcast/EpisodeManager';
@@ -20,6 +20,15 @@ import { EpisodeDetailModal } from './EpisodeDetailModal';
 import { TextInputModal } from './TextInputModal';
 
 export const PODCAST_SIDEBAR_VIEW_TYPE = 'podcast-sidebar-view';
+
+// Type-safe event registration helper
+type PodcastEvents = Events & {
+	on(name: 'podcast:queue-updated', callback: (queueId: string) => void): ReturnType<Events['on']>;
+	on(name: 'podcast:player-state-updated', callback: () => void): ReturnType<Events['on']>;
+	on(name: 'podcast:episode-changed', callback: () => void): ReturnType<Events['on']>;
+	on(name: 'podcast:playlist-updated', callback: (playlistId: string) => void): ReturnType<Events['on']>;
+	on(name: 'podcast:queue-changed', callback: () => void): ReturnType<Events['on']>;
+};
 
 /**
  * PodcastSidebarView - Main sidebar for podcast browsing
@@ -56,7 +65,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Listen for queue/playlist updates
 		this.registerEvent(
-			(this.app.workspace as any).on('podcast:queue-updated', async (queueId: string) => {
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-updated', async (queueId: string) => {
 				if (this.selectedQueue && this.selectedQueue.id === queueId) {
 					this.selectedQueue = await this.plugin.getQueueManager().getQueue(queueId);
 					await this.render();
@@ -66,19 +75,19 @@ export class PodcastSidebarView extends ItemView {
 
 		// Listen for player state updates to refresh UI (e.g. play/pause icons)
 		this.registerEvent(
-			(this.app.workspace as any).on('podcast:player-state-updated', () => {
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:player-state-updated', () => {
 				this.updateListIcons();
 			})
 		);
 
 		this.registerEvent(
-			(this.app.workspace as any).on('podcast:episode-changed', () => {
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:episode-changed', () => {
 				this.updateListIcons();
 			})
 		);
 
 		this.registerEvent(
-			(this.app.workspace as any).on('podcast:playlist-updated', async (playlistId: string) => {
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:playlist-updated', async (playlistId: string) => {
 				if (this.selectedPlaylist && this.selectedPlaylist.id === playlistId) {
 					this.selectedPlaylist = await this.plugin.getPlaylistManager().getPlaylist(playlistId);
 					await this.render();
@@ -1327,27 +1336,31 @@ export class PodcastSidebarView extends ItemView {
 				case 'author':
 					comparison = (a.author || '').localeCompare(b.author || '');
 					break;
-				case 'date':
+				case 'date': {
 					const aDate = new Date(a.subscribedAt).getTime();
 					const bDate = new Date(b.subscribedAt).getTime();
 					comparison = aDate - bDate;
 					break;
-				case 'latest':
+				}
+				case 'latest': {
 					// Sort by most recent episode publish date
 					const aLatest = this.getLatestEpisodeDate(a);
 					const bLatest = this.getLatestEpisodeDate(b);
 					comparison = aLatest - bLatest;
 					break;
-				case 'count':
+				}
+				case 'count': {
 					const aCount = this.podcastStats.get(a.id)?.totalEpisodes || 0;
 					const bCount = this.podcastStats.get(b.id)?.totalEpisodes || 0;
 					comparison = aCount - bCount;
 					break;
-				case 'unplayed':
+				}
+				case 'unplayed': {
 					const aUnplayed = this.podcastStats.get(a.id)?.unplayedEpisodes || 0;
 					const bUnplayed = this.podcastStats.get(b.id)?.unplayedEpisodes || 0;
 					comparison = aUnplayed - bUnplayed;
 					break;
+				}
 			}
 
 			return direction === 'asc' ? comparison : -comparison;
@@ -1383,11 +1396,12 @@ export class PodcastSidebarView extends ItemView {
 				case 'title':
 					comparison = a.title.localeCompare(b.title);
 					break;
-				case 'date':
+				case 'date': {
 					const aDate = new Date(a.publishDate).getTime();
 					const bDate = new Date(b.publishDate).getTime();
 					comparison = aDate - bDate;
 					break;
+				}
 				case 'duration':
 					comparison = a.duration - b.duration;
 					break;
@@ -2179,11 +2193,7 @@ export class PodcastSidebarView extends ItemView {
 		const detailsContainer = this.sidebarContentEl.createDiv({ cls: 'playlist-details-container' });
 
 		// Header section with metadata and play button
-		const header = detailsContainer.createDiv({ cls: 'playlist-details-header' });
-		header.style.display = 'flex';
-		header.style.justifyContent = 'space-between';
-		header.style.alignItems = 'center';
-		header.style.marginBottom = 'var(--size-4-3)';
+		const header = detailsContainer.createDiv({ cls: 'playlist-details-header podcast-sidebar-header-flex' });
 
 		// Metadata section
 		const metadata = header.createDiv({ cls: 'playlist-details-metadata' });
@@ -2194,7 +2204,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Play All button
 		const playAllBtn = header.createEl('button', {
-			text: 'Play Queue',
+			text: 'Play queue',
 			cls: 'playlist-play-all-button'
 		});
 		setIcon(playAllBtn, 'play');
@@ -2415,11 +2425,12 @@ export class PodcastSidebarView extends ItemView {
 				case 'name':
 					comparison = a.name.localeCompare(b.name);
 					break;
-				case 'date':
+				case 'date': {
 					const aDate = new Date(a.createdAt).getTime();
 					const bDate = new Date(b.createdAt).getTime();
 					comparison = aDate - bDate;
 					break;
+				}
 				case 'count':
 					comparison = a.episodeIds.length - b.episodeIds.length;
 					break;

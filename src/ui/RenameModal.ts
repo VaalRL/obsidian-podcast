@@ -40,10 +40,7 @@ export class RenameModal extends Modal {
         // Focus the input
         inputSetting.controlEl.querySelector('input')?.focus();
 
-        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.justifyContent = 'space-between';
-        buttonContainer.style.marginTop = '20px';
+        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container podcast-modal-button-container-spaced' });
 
         // Delete button (left side)
         if (this.onDelete) {
@@ -56,13 +53,11 @@ export class RenameModal extends Modal {
                         this.close();
                     }
                 });
-            deleteBtn.buttonEl.style.marginRight = 'auto';
+            deleteBtn.buttonEl.addClass('podcast-delete-button-auto-margin');
         }
 
         // Cancel and Save buttons (right side)
-        const rightButtons = buttonContainer.createDiv();
-        rightButtons.style.display = 'flex';
-        rightButtons.style.gap = '10px';
+        const rightButtons = buttonContainer.createDiv({ cls: 'podcast-modal-right-buttons' });
 
         new ButtonComponent(rightButtons)
             .setButtonText('Cancel')

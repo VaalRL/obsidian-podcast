@@ -60,7 +60,7 @@ export class AtomParser {
 					'author',
 				],
 			},
-		} as any);
+		});
 	}
 
 	/**

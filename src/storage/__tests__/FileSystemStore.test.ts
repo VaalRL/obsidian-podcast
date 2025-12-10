@@ -190,23 +190,14 @@ describe('FileSystemStore', () => {
 				);
 			});
 
-			it('should create backup before saving if file exists', async () => {
+			it('should overwrite existing file without backup by default', async () => {
 				const testData: TestData = { id: 'test', name: 'Test', value: 42 };
 				mockAdapter.exists.mockResolvedValue(true);
 
 				await store.save(testData);
 
-				expect(mockPathManager.createBackup).toHaveBeenCalledWith('test-data.json');
-				expect(mockAdapter.write).toHaveBeenCalled();
-			});
-
-			it('should continue saving if backup fails', async () => {
-				const testData: TestData = { id: 'test', name: 'Test', value: 42 };
-				mockAdapter.exists.mockResolvedValue(true);
-				mockPathManager.createBackup.mockRejectedValue(new Error('Backup failed'));
-
-				await store.save(testData);
-
+				// Default SingleFileStore.save() does not create backup
+				expect(mockPathManager.createBackup).not.toHaveBeenCalled();
 				expect(mockAdapter.write).toHaveBeenCalled();
 			});
 

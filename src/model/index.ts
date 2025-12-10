@@ -194,9 +194,10 @@ export interface PluginSettings {
 
 /**
  * Default plugin settings
+ * Note: dataFolderPath should be prefixed with vault.configDir at runtime
  */
 export const DEFAULT_SETTINGS: PluginSettings = {
-	dataFolderPath: '.obsidian/plugins/podcast-player/data',
+	dataFolderPath: 'plugins/podcast-player/data',
 	defaultPlaybackSettings: {
 		volume: 1.0,
 		playbackSpeed: 1.0,

@@ -1960,3 +1960,104 @@
 .player-button-add-note {
     margin-left: var(--size-4-2);
 }
+
+/* ==========================================================================
+   Modal Layout Classes (Replacing Inline Styles)
+   ========================================================================== */
+
+/* Display utilities */
+.podcast-display-none {
+    display: none;
+}
+
+.podcast-display-block {
+    display: block;
+}
+
+.podcast-display-flex {
+    display: flex;
+}
+
+/* Modal button containers */
+.podcast-modal-button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.podcast-modal-button-container-spaced {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.podcast-modal-right-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+/* Confirm modal specific */
+.podcast-confirm-message {
+    white-space: pre-wrap;
+}
+
+.podcast-confirm-input-container {
+    margin-top: 16px;
+}
+
+.podcast-confirm-input-setting {
+    border: none !important;
+    padding: 0 !important;
+}
+
+/* Rename modal specific */
+.podcast-delete-button-auto-margin {
+    margin-right: auto;
+}
+
+/* Player view specific */
+.podcast-progress-width-0 {
+    width: 0%;
+}
+
+.podcast-progress-left-0 {
+    left: 0%;
+}
+
+/* Sidebar header layout */
+.podcast-sidebar-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--size-4-3);
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+
+/* Visibility utilities */
+.podcast-hidden {
+    display: none !important;
+}
+
+.podcast-visible {
+    display: block !important;
+}
+
+.podcast-flex-visible {
+    display: flex !important;
+}
+
+/* Support button container */
+.podcast-support-button-container {
+    display: flex;
+    justify-content: center;
+    padding: var(--size-4-4);
+}
+
+.podcast-support-button {
+    height: 50px !important;
+    width: auto !important;
+}

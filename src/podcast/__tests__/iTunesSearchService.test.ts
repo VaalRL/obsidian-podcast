@@ -210,10 +210,12 @@ describe('iTunesSearchService', () => {
 			expect(results).toEqual([]);
 		});
 
-		it('should handle network error', async () => {
+		it('should handle network error gracefully', async () => {
 			mockRequestUrl.mockRejectedValue(new NetworkError('Network timeout', 'https://itunes.apple.com/search'));
 
-			await expect(service.searchPodcasts('test')).rejects.toThrow(NetworkError);
+			// Network errors return empty array for better UX instead of throwing
+			const results = await service.searchPodcasts('test');
+			expect(results).toEqual([]);
 		});
 
 		it('should handle invalid response format', async () => {

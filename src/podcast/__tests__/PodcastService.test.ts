@@ -464,7 +464,7 @@ describe('PodcastService', () => {
 		});
 
 		it('should import subscriptions', async () => {
-			const importData = { podcasts: [samplePodcast] };
+			const importData = { version: 1, podcasts: [samplePodcast] };
 
 			await service.importSubscriptions(importData, false);
 
@@ -472,7 +472,7 @@ describe('PodcastService', () => {
 		});
 
 		it('should import subscriptions with replace flag', async () => {
-			const importData = { podcasts: [samplePodcast] };
+			const importData = { version: 1, podcasts: [samplePodcast] };
 
 			await service.importSubscriptions(importData, true);
 

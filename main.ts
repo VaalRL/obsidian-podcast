@@ -1,4 +1,4 @@
-import { Plugin, Notice, WorkspaceLeaf } from 'obsidian';
+import { Plugin, Notice, WorkspaceLeaf, Events } from 'obsidian';
 import { PluginSettings, DEFAULT_SETTINGS } from './src/model';
 import {
 	SettingsStore,
@@ -27,6 +27,15 @@ import { NoteExporter } from './src/markdown';
 import { CleanupService } from './src/cleanup/CleanupService';
 import { BackupService } from './src/backup';
 import { logger } from './src/utils/Logger';
+
+// Type-safe event registration helper for custom podcast events
+type PodcastEvents = Events & {
+	on(name: 'podcast:queue-updated', callback: (queueId: string) => void): ReturnType<Events['on']>;
+	on(name: 'podcast:player-state-updated', callback: () => void): ReturnType<Events['on']>;
+	on(name: 'podcast:episode-changed', callback: () => void): ReturnType<Events['on']>;
+	on(name: 'podcast:playlist-updated', callback: (playlistId: string) => void): ReturnType<Events['on']>;
+	on(name: 'podcast:queue-changed', callback: () => void): ReturnType<Events['on']>;
+};
 
 /**
  * Podcast Player Plugin for Obsidian
@@ -82,8 +91,9 @@ export default class PodcastPlayerPlugin extends Plugin {
 	async onload() {
 		logger.info('Loading Podcast Player plugin');
 
-		// Initialize data path manager with default path
-		this.pathManager = new DataPathManager(this.app.vault, DEFAULT_SETTINGS.dataFolderPath);
+		// Initialize data path manager with default path using configDir
+		const defaultDataPath = `${this.app.vault.configDir}/${DEFAULT_SETTINGS.dataFolderPath}`;
+		this.pathManager = new DataPathManager(this.app.vault, defaultDataPath);
 		this.settingsStore = new SettingsStore(this.app.vault, this.pathManager);
 
 		// Load settings
@@ -188,7 +198,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		// Sync Queue -> Playlist
 		this.registerEvent(
-			(this.app.workspace as any).on('podcast:queue-updated', async (queueId: string) => {
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-updated', async (queueId: string) => {
 				const queue = await this.queueManager.getQueue(queueId);
 				if (queue && queue.isPlaylist && queue.sourceId) {
 					const playlist = await this.playlistManager.getPlaylist(queue.sourceId);
@@ -208,7 +218,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		// Sync Playlist -> Queue
 		this.registerEvent(
-			(this.app.workspace as any).on('podcast:playlist-updated', async (playlistId: string) => {
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:playlist-updated', async (playlistId: string) => {
 				const queues = await this.queueManager.getAllQueues();
 				const derivedQueue = queues.find(q => q.sourceId === playlistId);
 
@@ -226,7 +236,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 						const episodesChanged = JSON.stringify(queueIds) !== JSON.stringify(playlistIds);
 
 						if (episodesChanged || nameChanged) {
-							const updates: any = {};
+							const updates: Partial<{ episodeIds: string[]; name: string }> = {};
 
 							if (episodesChanged) {
 								updates.episodeIds = playlistIds;
@@ -325,50 +335,50 @@ export default class PodcastPlayerPlugin extends Plugin {
 		this.addSettingTab(new PodcastPlayerSettingTab(this.app, this));
 
 		// Add ribbon icon for quick access - opens both left and right panels
-		this.addRibbonIcon('podcast', 'Podcast Player', async (evt: MouseEvent) => {
-			await this.activateSidebarView(); // Left panel: Podcast management
-			await this.activatePlayerView(); // Right panel: Player controls
+		this.addRibbonIcon('podcast', 'Podcast player', () => {
+			void this.activateSidebarView(); // Left panel: Podcast management
+			void this.activatePlayerView(); // Right panel: Player controls
 		});
 
 		// Register commands
 		this.addCommand({
-			id: 'open-podcast-player',
-			name: 'Open Podcast Player',
-			callback: async () => {
-				await this.activatePlayerView();
+			id: 'open-player',
+			name: 'Open player',
+			callback: () => {
+				void this.activatePlayerView();
 			}
 		});
 
 		this.addCommand({
-			id: 'open-podcast-sidebar',
-			name: 'Open Podcast Sidebar',
-			callback: async () => {
-				await this.activateSidebarView();
+			id: 'open-sidebar',
+			name: 'Open sidebar',
+			callback: () => {
+				void this.activateSidebarView();
 			}
 		});
 
 		this.addCommand({
-			id: 'subscribe-to-podcast',
-			name: 'Subscribe to Podcast',
+			id: 'subscribe',
+			name: 'Subscribe to podcast',
 			callback: () => {
 				new SubscribePodcastModal(
 					this.app,
 					this,
-					async (podcastId) => {
+					(podcastId) => {
 						// Callback after successful subscription
 						logger.info(`Successfully subscribed to podcast: ${podcastId}`);
 						// Activate sidebar to show the new podcast
-						await this.activateSidebarView();
+						void this.activateSidebarView();
 					}
 				).open();
 			}
 		});
 
 		this.addCommand({
-			id: 'open-playlist-queue',
-			name: 'Open Playlists & Queues',
-			callback: async () => {
-				await this.activatePlaylistQueueView();
+			id: 'open-playlists-queues',
+			name: 'Open playlists and queues',
+			callback: () => {
+				void this.activatePlaylistQueueView();
 			}
 		});
 
@@ -400,11 +410,6 @@ export default class PodcastPlayerPlugin extends Plugin {
 		if (this.backupService) {
 			this.backupService.stop();
 		}
-
-		// Detach all our custom views
-		this.app.workspace.detachLeavesOfType(PLAYER_VIEW_TYPE);
-		this.app.workspace.detachLeavesOfType(PODCAST_SIDEBAR_VIEW_TYPE);
-		this.app.workspace.detachLeavesOfType(PLAYLIST_QUEUE_VIEW_TYPE);
 	}
 
 	/**
@@ -415,13 +420,24 @@ export default class PodcastPlayerPlugin extends Plugin {
 		try {
 			this.settings = await this.settingsStore.loadWithMigration();
 
+			// Handle data folder path - ensure it uses configDir for default
+			let dataPath = this.settings.dataFolderPath;
+			if (!dataPath || dataPath === DEFAULT_SETTINGS.dataFolderPath) {
+				// Use default path with configDir prefix
+				dataPath = `${this.app.vault.configDir}/${DEFAULT_SETTINGS.dataFolderPath}`;
+				this.settings.dataFolderPath = dataPath;
+			}
+
 			// Update path manager with current data folder path
-			this.pathManager.updateBasePath(this.settings.dataFolderPath);
+			this.pathManager.updateBasePath(dataPath);
 
 			logger.info('Settings loaded successfully');
 		} catch (error) {
 			logger.error('Failed to load settings, using defaults', error);
-			this.settings = { ...DEFAULT_SETTINGS };
+			this.settings = {
+				...DEFAULT_SETTINGS,
+				dataFolderPath: `${this.app.vault.configDir}/${DEFAULT_SETTINGS.dataFolderPath}`
+			};
 		}
 		logger.methodExit('PodcastPlayerPlugin', 'loadSettings');
 	}
@@ -452,7 +468,10 @@ export default class PodcastPlayerPlugin extends Plugin {
 		logger.methodEntry('PodcastPlayerPlugin', 'resetSettings');
 		try {
 			await this.settingsStore.resetToDefaults();
-			this.settings = { ...DEFAULT_SETTINGS };
+			this.settings = {
+				...DEFAULT_SETTINGS,
+				dataFolderPath: `${this.app.vault.configDir}/${DEFAULT_SETTINGS.dataFolderPath}`
+			};
 
 			// Update path manager
 			this.pathManager.updateBasePath(this.settings.dataFolderPath);

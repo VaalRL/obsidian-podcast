@@ -59,7 +59,7 @@ export class Logger {
 	 */
 	info(message: string, ...args: unknown[]): void {
 		if (this.logLevel <= LogLevel.INFO) {
-			console.info(`${this.prefix} [INFO]`, message, ...args);
+			console.debug(`${this.prefix} [INFO]`, message, ...args);
 		}
 	}
 

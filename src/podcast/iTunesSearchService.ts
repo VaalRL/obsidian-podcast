@@ -112,7 +112,7 @@ export class iTunesSearchService {
 							// For server errors (5xx), throw to trigger retry
 							if (result.status >= 400 && result.status < 500) {
 								logger.warn(`iTunes API returned status ${result.status}`);
-								return { status: result.status, json: { resultCount: 0, results: [] } } as any;
+								return { status: result.status, json: { resultCount: 0, results: [] }, headers: {}, arrayBuffer: new ArrayBuffer(0), text: '' };
 							}
 							throw new NetworkError(
 								`iTunes API returned status ${result.status}`,
@@ -122,23 +122,11 @@ export class iTunesSearchService {
 
 						return result;
 					} catch (err) {
-						logger.warn('requestUrl failed, trying native fetch fallback', err);
-
-						// Fallback to native fetch (works if API supports CORS)
-						try {
-							const response = await fetch(url);
-							if (!response.ok) {
-								throw new Error(`Fetch failed with status ${response.status}`);
-							}
-							const json = await response.json();
-							return { status: 200, json };
-						} catch (fetchErr) {
-							logger.error('Native fetch also failed', fetchErr);
-							throw new NetworkError(
-								'Failed to connect to iTunes API via both requestUrl and fetch.',
-								url
-							);
-						}
+						logger.error('requestUrl failed', err);
+						throw new NetworkError(
+							'Failed to connect to iTunes API',
+							url
+						);
 					}
 				},
 				{

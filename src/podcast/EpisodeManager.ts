@@ -236,12 +236,13 @@ export class EpisodeManager {
 			let comparison = 0;
 
 			switch (sortBy) {
-				case 'publishDate':
+				case 'publishDate': {
 					// Convert to Date objects in case they were deserialized as strings
 					const dateA = a.publishDate instanceof Date ? a.publishDate : new Date(a.publishDate);
 					const dateB = b.publishDate instanceof Date ? b.publishDate : new Date(b.publishDate);
 					comparison = dateA.getTime() - dateB.getTime();
 					break;
+				}
 
 				case 'duration':
 					comparison = a.duration - b.duration;
@@ -251,17 +252,19 @@ export class EpisodeManager {
 					comparison = a.title.localeCompare(b.title);
 					break;
 
-				case 'episodeNumber':
+				case 'episodeNumber': {
 					const aNum = a.episodeNumber || 0;
 					const bNum = b.episodeNumber || 0;
 					comparison = aNum - bNum;
 					break;
+				}
 
-				case 'lastPlayed':
+				case 'lastPlayed': {
 					const aLastPlayed = a.progress?.lastPlayedAt?.getTime() || 0;
 					const bLastPlayed = b.progress?.lastPlayedAt?.getTime() || 0;
 					comparison = aLastPlayed - bLastPlayed;
 					break;
+				}
 
 				default:
 					comparison = 0;

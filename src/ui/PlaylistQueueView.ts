@@ -148,9 +148,9 @@ export class PlaylistQueueView extends ItemView {
 
 		const sortBySelect = sortContainer.createEl('select', { cls: 'sort-select' });
 
-		const nameOption = sortBySelect.createEl('option', { value: 'name', text: 'Name' });
-		const dateOption = sortBySelect.createEl('option', { value: 'date', text: 'Date' });
-		const countOption = sortBySelect.createEl('option', { value: 'count', text: 'Episode Count' });
+		sortBySelect.createEl('option', { value: 'name', text: 'Name' });
+		sortBySelect.createEl('option', { value: 'date', text: 'Date' });
+		sortBySelect.createEl('option', { value: 'count', text: 'Episode count' });
 
 		sortBySelect.value = this.sortBy;
 
@@ -821,11 +821,12 @@ export class PlaylistQueueView extends ItemView {
 				case 'name':
 					comparison = a.name.localeCompare(b.name);
 					break;
-				case 'date':
+				case 'date': {
 					const aDate = new Date(a.createdAt).getTime();
 					const bDate = new Date(b.createdAt).getTime();
 					comparison = aDate - bDate;
 					break;
+				}
 				case 'count':
 					comparison = a.episodeIds.length - b.episodeIds.length;
 					break;
@@ -852,11 +853,12 @@ export class PlaylistQueueView extends ItemView {
 				case 'name':
 					comparison = a.name.localeCompare(b.name);
 					break;
-				case 'date':
+				case 'date': {
 					const aDate = new Date(a.createdAt).getTime();
 					const bDate = new Date(b.createdAt).getTime();
 					comparison = aDate - bDate;
 					break;
+				}
 				case 'count':
 					comparison = a.episodeIds.length - b.episodeIds.length;
 					break;

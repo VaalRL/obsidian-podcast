@@ -59,7 +59,7 @@ export class SubscribePodcastModal extends Modal {
 		const tabsContainer = container.createDiv({ cls: 'subscribe-modal-tabs' });
 
 		const searchTab = tabsContainer.createEl('button', {
-			text: 'Search Online',
+			text: 'Search online',
 			cls: 'subscribe-modal-tab'
 		});
 		if (this.activeTab === 'search') searchTab.addClass('active');
@@ -85,7 +85,7 @@ export class SubscribePodcastModal extends Modal {
 		};
 
 		const fileTab = tabsContainer.createEl('button', {
-			text: 'From File',
+			text: 'From file',
 			cls: 'subscribe-modal-tab'
 		});
 		if (this.activeTab === 'file') fileTab.addClass('active');
@@ -357,7 +357,7 @@ export class SubscribePodcastModal extends Modal {
 		const headerActions = header.createDiv({ cls: 'subscribe-opml-header-actions' });
 
 		const selectAllBtn = headerActions.createEl('button', {
-			text: 'Select All',
+			text: 'Select all',
 			cls: 'subscribe-opml-action-btn'
 		});
 		selectAllBtn.addEventListener('click', () => {
@@ -366,7 +366,7 @@ export class SubscribePodcastModal extends Modal {
 		});
 
 		const selectNoneBtn = headerActions.createEl('button', {
-			text: 'Select None',
+			text: 'Select none',
 			cls: 'subscribe-opml-action-btn'
 		});
 		selectNoneBtn.addEventListener('click', () => {

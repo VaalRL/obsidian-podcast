@@ -5,7 +5,7 @@
  * Displays current episode, playback controls, and progress.
  */
 
-import { ItemView, WorkspaceLeaf, setIcon, Notice } from 'obsidian';
+import { ItemView, WorkspaceLeaf, setIcon, Notice, Events } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { PlaybackState, Queue, Episode, Playlist } from '../model';
 import type { EpisodeWithProgress } from '../podcast';
@@ -13,6 +13,15 @@ import { EpisodeDetailModal } from './EpisodeDetailModal';
 import { AddNoteModal } from './AddNoteModal';
 
 export const PLAYER_VIEW_TYPE = 'podcast-player-view';
+
+// Type-safe event registration helper
+type PodcastEvents = Events & {
+	on(name: 'podcast:queue-updated', callback: (queueId: string) => void): ReturnType<Events['on']>;
+	on(name: 'podcast:player-state-updated', callback: () => void): ReturnType<Events['on']>;
+	on(name: 'podcast:episode-changed', callback: () => void): ReturnType<Events['on']>;
+	on(name: 'podcast:playlist-updated', callback: (playlistId: string) => void): ReturnType<Events['on']>;
+	on(name: 'podcast:queue-changed', callback: () => void): ReturnType<Events['on']>;
+};
 
 /**
  * PlayerView - Main player control UI
@@ -37,7 +46,7 @@ export class PlayerView extends ItemView {
 
 		// Listen for queue updates
 		this.registerEvent(
-			(this.app.workspace as any).on('podcast:queue-updated', async (queueId: string) => {
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-updated', async (queueId: string) => {
 				// If current queue is updated
 				const currentQueue = await this.plugin.getQueueManager().getCurrentQueue();
 
@@ -58,11 +67,11 @@ export class PlayerView extends ItemView {
 		);
 
 		this.registerEvent(
-			(this.app.workspace as any).on('podcast:player-state-updated', () => this.updatePlayState())
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:player-state-updated', () => this.updatePlayState())
 		);
 
 		this.registerEvent(
-			(this.app.workspace as any).on('podcast:episode-changed', () => this.updatePlayState())
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:episode-changed', () => this.updatePlayState())
 		);
 	}
 
@@ -143,10 +152,9 @@ export class PlayerView extends ItemView {
 
 		// Podcast thumbnail
 		const thumbnail = infoSection.createEl('img', {
-			cls: 'player-podcast-thumbnail',
+			cls: 'player-podcast-thumbnail podcast-display-none',
 			attr: { src: '', alt: 'Podcast Artwork' }
 		});
-		thumbnail.style.display = 'none';
 
 		// Title container with info button
 		const titleContainer = infoSection.createDiv({ cls: 'episode-title-container' });
@@ -159,11 +167,10 @@ export class PlayerView extends ItemView {
 
 		// Info button to view episode details
 		const infoBtn = titleContainer.createEl('button', {
-			cls: 'player-info-button',
+			cls: 'player-info-button podcast-display-none',
 			attr: { 'aria-label': 'View episode details' }
 		});
 		setIcon(infoBtn, 'info');
-		infoBtn.style.display = 'none'; // Hidden until episode is loaded
 		infoBtn.addEventListener('click', () => this.handleShowEpisodeDetails());
 
 		const podcast = infoSection.createEl('p', {
@@ -259,12 +266,10 @@ export class PlayerView extends ItemView {
 		progressBarContainer.setAttribute('role', 'slider');
 
 		const progressBar = progressBarContainer.createDiv({ cls: 'progress-bar' });
-		const progressFill = progressBar.createDiv({ cls: 'progress-fill' });
-		progressFill.style.width = '0%';
+		const progressFill = progressBar.createDiv({ cls: 'progress-fill podcast-progress-width-0' });
 
 		// Thumb element for precise positioning
-		const progressThumb = progressBar.createDiv({ cls: 'progress-bar-thumb' });
-		progressThumb.style.left = '0%';
+		const progressThumb = progressBar.createDiv({ cls: 'progress-bar-thumb podcast-progress-left-0' });
 
 		// Tooltip
 		const tooltip = progressBarContainer.createDiv({ cls: 'progress-tooltip' });
@@ -292,8 +297,8 @@ export class PlayerView extends ItemView {
 				const progressThumb = progressBarContainer.querySelector('.progress-bar-thumb') as HTMLElement;
 				const currentTimeEl = this.playerContentEl.querySelector('.current-time') as HTMLElement;
 
-				if (progressFill) progressFill.style.width = `${percentage * 100}%`;
-				if (progressThumb) progressThumb.style.left = `${percentage * 100}%`;
+				if (progressFill) progressFill.setCssProps({ 'width': `${percentage * 100}%` });
+				if (progressThumb) progressThumb.setCssProps({ 'left': `${percentage * 100}%` });
 				if (currentTimeEl) currentTimeEl.textContent = this.formatTime(duration * percentage);
 
 				return percentage;
@@ -367,7 +372,7 @@ export class PlayerView extends ItemView {
 			const duration = state.currentEpisode.duration;
 
 			tooltip.textContent = this.formatTime(duration * percentage);
-			tooltip.style.left = `${percentage * 100}%`;
+			tooltip.setCssProps({ 'left': `${percentage * 100}%` });
 		});
 
 		// Total time (End)
@@ -740,32 +745,46 @@ export class PlayerView extends ItemView {
 			if (state.currentEpisode) {
 				if (titleEl) titleEl.textContent = state.currentEpisode.title;
 				if (durationEl) durationEl.textContent = this.formatTime(state.currentEpisode.duration);
-				if (infoBtnEl) infoBtnEl.style.display = 'flex';
+				if (infoBtnEl) {
+					infoBtnEl.removeClass('podcast-hidden');
+					infoBtnEl.addClass('podcast-flex-visible');
+				}
 
 				// Update thumbnail and podcast title
 				const podcastId = state.currentEpisode.podcastId;
 				if (podcastId) {
-					this.plugin.getSubscriptionStore().getPodcast(podcastId).then(podcast => {
+					void this.plugin.getSubscriptionStore().getPodcast(podcastId).then(podcast => {
 						if (podcast) {
 							if (podcastEl) podcastEl.textContent = podcast.title;
 							if (thumbnailEl && podcast.imageUrl) {
 								thumbnailEl.src = podcast.imageUrl;
-								thumbnailEl.style.display = 'block';
+								thumbnailEl.removeClass('podcast-hidden');
+								thumbnailEl.addClass('podcast-visible');
 							} else if (thumbnailEl) {
-								thumbnailEl.style.display = 'none';
+								thumbnailEl.removeClass('podcast-visible');
+								thumbnailEl.addClass('podcast-hidden');
 							}
 						}
 					});
 				} else {
 					if (podcastEl) podcastEl.textContent = 'Unknown Podcast';
-					if (thumbnailEl) thumbnailEl.style.display = 'none';
+					if (thumbnailEl) {
+						thumbnailEl.removeClass('podcast-visible');
+						thumbnailEl.addClass('podcast-hidden');
+					}
 				}
 			} else {
 				if (titleEl) titleEl.textContent = 'No episode playing';
 				if (podcastEl) podcastEl.textContent = 'Select a podcast to start';
 				if (durationEl) durationEl.textContent = '--:--';
-				if (thumbnailEl) thumbnailEl.style.display = 'none';
-				if (infoBtnEl) infoBtnEl.style.display = 'none';
+				if (thumbnailEl) {
+					thumbnailEl.removeClass('podcast-visible');
+					thumbnailEl.addClass('podcast-hidden');
+				}
+				if (infoBtnEl) {
+					infoBtnEl.removeClass('podcast-flex-visible');
+					infoBtnEl.addClass('podcast-hidden');
+				}
 			}
 
 			// Update play/pause button
@@ -789,12 +808,12 @@ export class PlayerView extends ItemView {
 			if (progressFill && !this.isDraggingProgress) {
 				if (state.currentEpisode && state.currentEpisode.duration > 0) {
 					const percentage = Math.min(100, Math.max(0, (state.position / state.currentEpisode.duration) * 100));
-					progressFill.style.width = `${percentage}%`;
-					if (progressThumb) progressThumb.style.left = `${percentage}%`;
+					progressFill.setCssProps({ 'width': `${percentage}%` });
+					if (progressThumb) progressThumb.setCssProps({ 'left': `${percentage}%` });
 				} else {
 					// No episode or invalid duration, reset to 0
-					progressFill.style.width = '0%';
-					if (progressThumb) progressThumb.style.left = '0%';
+					progressFill.setCssProps({ 'width': '0%' });
+					if (progressThumb) progressThumb.setCssProps({ 'left': '0%' });
 				}
 			}
 

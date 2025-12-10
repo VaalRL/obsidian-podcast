@@ -33,7 +33,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 		this.loadSettings();
 
 		// Header
-		containerEl.createEl('h2', { text: 'Podcast Settings' });
+		new Setting(containerEl)
+			.setName('Podcast settings')
+			.setHeading();
 
 		// === Data Storage ===
 		this.addStorageSection(containerEl);
@@ -66,7 +68,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	/**
 	 * Load current settings from plugin
 	 */
-	private async loadSettings(): Promise<void> {
+	private loadSettings(): void {
 		// In future, this will load from SettingsStore
 		// For now, we use default settings as placeholder
 		this.settings = this.plugin.settings;
@@ -84,13 +86,15 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	 * Add storage section
 	 */
 	private addStorageSection(containerEl: HTMLElement): void {
-		containerEl.createEl('h3', { text: 'Data Storage' });
+		new Setting(containerEl)
+			.setName('Data storage')
+			.setHeading();
 
 		new Setting(containerEl)
 			.setName('Data folder path')
 			.setDesc('Folder where podcast data will be stored (relative to vault root)')
 			.addText(text => text
-				.setPlaceholder('.obsidian/plugins/podcast-player/data')
+				.setPlaceholder(this.settings.dataFolderPath || 'config/plugins/podcast-player/data')
 				.setValue(this.settings.dataFolderPath)
 				.onChange(async (value) => {
 					this.settings.dataFolderPath = value;
@@ -102,11 +106,10 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	 * Add playback settings section
 	 */
 	private addPlaybackSection(containerEl: HTMLElement): void {
-		containerEl.createEl('h3', { text: 'Default Playback Settings' });
-		containerEl.createEl('p', {
-			text: 'These settings apply to all podcasts by default. Individual podcasts can override these.',
-			cls: 'setting-item-description'
-		});
+		new Setting(containerEl)
+			.setName('Default playback settings')
+			.setDesc('These settings apply to all podcasts by default. Individual podcasts can override these.')
+			.setHeading();
 
 		// Volume
 		new Setting(containerEl)
@@ -169,11 +172,10 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	 * Add daily note settings section
 	 */
 	private addDailyNoteSection(containerEl: HTMLElement): void {
-		containerEl.createEl('h3', { text: 'Daily Note Integration' });
-		containerEl.createEl('p', {
-			text: 'Configure how podcast notes are added to your daily notes.',
-			cls: 'setting-item-description'
-		});
+		new Setting(containerEl)
+			.setName('Daily note integration')
+			.setDesc('Configure how podcast notes are added to your daily notes.')
+			.setHeading();
 
 		// Daily note folder path
 		new Setting(containerEl)
@@ -217,7 +219,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	 * Add cache settings section
 	 */
 	private addCacheSection(containerEl: HTMLElement): void {
-		containerEl.createEl('h3', { text: 'Download & Cache' });
+		new Setting(containerEl)
+			.setName('Download and cache')
+			.setHeading();
 
 		// Auto Download
 		new Setting(containerEl)
@@ -250,7 +254,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	 * Add sync settings section
 	 */
 	private addSyncSection(containerEl: HTMLElement): void {
-		containerEl.createEl('h3', { text: 'Feed Sync' });
+		new Setting(containerEl)
+			.setName('Feed sync')
+			.setHeading();
 
 		// Feed Update Interval
 		new Setting(containerEl)
@@ -275,7 +281,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	 * Add notification settings section
 	 */
 	private addNotificationSection(containerEl: HTMLElement): void {
-		containerEl.createEl('h3', { text: 'Notifications' });
+		new Setting(containerEl)
+			.setName('Notifications')
+			.setHeading();
 
 		new Setting(containerEl)
 			.setName('Enable notifications')
@@ -292,7 +300,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	 * Add backup section
 	 */
 	private addBackupSection(containerEl: HTMLElement): void {
-		containerEl.createEl('h3', { text: 'Backup & Restore' });
+		new Setting(containerEl)
+			.setName('Backup and restore')
+			.setHeading();
 
 		// OPML Export
 		new Setting(containerEl)
@@ -346,7 +356,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	 * Add advanced section
 	 */
 	private addAdvancedSection(containerEl: HTMLElement): void {
-		containerEl.createEl('h3', { text: 'Advanced' });
+		new Setting(containerEl)
+			.setName('Advanced')
+			.setHeading();
 
 		// Reset to defaults
 		new Setting(containerEl)
@@ -386,17 +398,13 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	 * Add support section with Buy Me A Coffee button
 	 */
 	private addSupportSection(containerEl: HTMLElement): void {
-		containerEl.createEl('h3', { text: 'Support' });
-
-		const supportDesc = containerEl.createDiv({ cls: 'setting-item-description' });
-		supportDesc.setText('If you find this plugin useful, consider supporting the development!');
-		supportDesc.style.marginBottom = 'var(--size-4-4)';
+		new Setting(containerEl)
+			.setName('Support')
+			.setDesc('If you find this plugin useful, consider supporting the development!')
+			.setHeading();
 
 		// Buy Me A Coffee button container
-		const buttonContainer = containerEl.createDiv({ cls: 'support-button-container' });
-		buttonContainer.style.display = 'flex';
-		buttonContainer.style.justifyContent = 'center';
-		buttonContainer.style.padding = 'var(--size-4-4)';
+		const buttonContainer = containerEl.createDiv({ cls: 'podcast-support-button-container' });
 
 		// Buy Me A Coffee link
 		const coffeeLink = buttonContainer.createEl('a', {
@@ -404,12 +412,11 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			attr: { target: '_blank', rel: 'noopener noreferrer' }
 		});
 
-		// Buy Me A Coffee button element
-		const coffeeButton = coffeeLink.createEl('img', {
+		coffeeLink.createEl('img', {
+			cls: 'podcast-support-button',
 			attr: {
 				src: 'https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png',
-				alt: 'Buy Me A Coffee',
-				style: 'height: 50px !important; width: auto !important;'
+				alt: 'Buy Me A Coffee'
 			}
 		});
 	}
@@ -606,7 +613,13 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 				}
 
 				// Confirm before restore
-				if (!confirm('This will overwrite all current data. Are you sure you want to restore from this backup?')) {
+				const confirmed = await showConfirmModal(this.app, {
+					title: 'Restore backup',
+					message: 'This will overwrite all current data. Are you sure you want to restore from this backup?',
+					confirmText: 'Restore',
+					confirmClass: 'warning'
+				});
+				if (!confirmed) {
 					return;
 				}
 

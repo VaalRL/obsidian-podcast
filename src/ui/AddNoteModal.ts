@@ -47,7 +47,7 @@ export class AddNoteModal extends Modal {
         contentEl.addClass('add-note-modal');
 
         // Header
-        contentEl.createEl('h2', { text: 'Add Note' });
+        contentEl.createEl('h2', { text: 'Add note' });
 
         // Show current context
         const contextEl = contentEl.createDiv({ cls: 'add-note-context' });
@@ -96,7 +96,7 @@ export class AddNoteModal extends Modal {
             .addEventListener('click', () => this.close());
 
         const submitBtn = buttonContainer.createEl('button', {
-            text: 'Add Note',
+            text: 'Add note',
             cls: 'mod-cta'
         });
         submitBtn.addEventListener('click', () => this.handleSubmit());

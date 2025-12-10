@@ -10,7 +10,7 @@ import { logger } from '../utils/Logger';
 import { FeedParseError, NetworkError, StorageError, handleError } from '../utils/errorUtils';
 import { Podcast, Episode, PodcastSettings, PodcastSearchResult } from '../model';
 import { FeedService } from '../feed/FeedService';
-import { SubscriptionStore } from '../storage/SubscriptionStore';
+import { SubscriptionStore, SubscriptionData } from '../storage/SubscriptionStore';
 import { ImageCacheStore } from '../storage/CacheStore';
 import { iTunesSearchService, SearchOptions } from './iTunesSearchService';
 
@@ -380,7 +380,7 @@ export class PodcastService {
 	/**
 	 * Export all subscriptions
 	 */
-	async exportSubscriptions(): Promise<any> {
+	async exportSubscriptions(): Promise<SubscriptionData> {
 		logger.methodEntry('PodcastService', 'exportSubscriptions');
 
 		const data = await this.subscriptionStore.exportSubscriptions();
@@ -392,7 +392,7 @@ export class PodcastService {
 	/**
 	 * Import subscriptions
 	 */
-	async importSubscriptions(data: any, replace = false): Promise<void> {
+	async importSubscriptions(data: SubscriptionData, replace = false): Promise<void> {
 		logger.methodEntry('PodcastService', 'importSubscriptions', `replace=${replace}`);
 
 		await this.subscriptionStore.importSubscriptions(data, replace);

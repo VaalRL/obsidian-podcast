@@ -130,7 +130,7 @@ export class QueueStore extends MultiFileStore<Queue[], Queue> {
 
 		for (const id of ids) {
 			try {
-				const queue = await this.loadItem(id, null as any);
+				const queue = await this.loadItem(id, {} as Queue);
 				if (queue && this.validateQueue(queue)) {
 					queues.push(queue);
 				}
@@ -180,7 +180,7 @@ export class QueueStore extends MultiFileStore<Queue[], Queue> {
 		logger.methodEntry('QueueStore', 'getQueue', id);
 
 		try {
-			const queue = await this.loadItem(id, null as any);
+			const queue = await this.loadItem(id, {} as Queue);
 
 			if (!queue || !this.validateQueue(queue)) {
 				logger.methodExit('QueueStore', 'getQueue', 'invalid');

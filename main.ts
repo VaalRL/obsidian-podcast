@@ -175,22 +175,24 @@ export default class PodcastPlayerPlugin extends Plugin {
 				lastEpisodeId = episode?.id || null;
 				this.app.workspace.trigger('podcast:episode-changed', episode);
 			},
-			onEpisodeEnded: async (episode) => {
-				// When an episode ends, try to play the next one from the queue
-				// and remove the played episode (queue behavior)
-				const currentQueue = await this.queueManager.getCurrentQueue();
-				if (currentQueue && currentQueue.autoPlayNext) {
-					const nextEpisodeId = await this.queueManager.nextAndRemovePlayed(currentQueue.id);
-					if (nextEpisodeId) {
-						// Load and play the next episode
-						const nextEpisode = await this.episodeManager.getEpisodeWithProgress(nextEpisodeId);
-						if (nextEpisode) {
-							await this.playerController.loadEpisode(nextEpisode, true, true);
+			onEpisodeEnded: (episode) => {
+				void (async () => {
+					// When an episode ends, try to play the next one from the queue
+					// and remove the played episode (queue behavior)
+					const currentQueue = await this.queueManager.getCurrentQueue();
+					if (currentQueue && currentQueue.autoPlayNext) {
+						const nextEpisodeId = await this.queueManager.nextAndRemovePlayed(currentQueue.id);
+						if (nextEpisodeId) {
+							// Load and play the next episode
+							const nextEpisode = await this.episodeManager.getEpisodeWithProgress(nextEpisodeId);
+							if (nextEpisode) {
+								await this.playerController.loadEpisode(nextEpisode, true, true);
+							}
 						}
+						// Trigger UI refresh
+						this.app.workspace.trigger('podcast:queue-changed');
 					}
-					// Trigger UI refresh
-					this.app.workspace.trigger('podcast:queue-changed');
-				}
+				})();
 			}
 		});
 
@@ -198,69 +200,73 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		// Sync Queue -> Playlist
 		this.registerEvent(
-			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-updated', async (queueId: string) => {
-				const queue = await this.queueManager.getQueue(queueId);
-				if (queue && queue.isPlaylist && queue.sourceId) {
-					const playlist = await this.playlistManager.getPlaylist(queue.sourceId);
-					if (playlist) {
-						// Compare episode IDs
-						const queueIds = queue.episodeIds;
-						const playlistIds = playlist.episodeIds;
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-updated', (queueId: string) => {
+				void (async () => {
+					const queue = await this.queueManager.getQueue(queueId);
+					if (queue && queue.isPlaylist && queue.sourceId) {
+						const playlist = await this.playlistManager.getPlaylist(queue.sourceId);
+						if (playlist) {
+							// Compare episode IDs
+							const queueIds = queue.episodeIds;
+							const playlistIds = playlist.episodeIds;
 
-						if (JSON.stringify(queueIds) !== JSON.stringify(playlistIds)) {
-							// Update playlist to match queue
-							await this.playlistManager.updatePlaylist(playlist.id, { episodeIds: queueIds });
+							if (JSON.stringify(queueIds) !== JSON.stringify(playlistIds)) {
+								// Update playlist to match queue
+								await this.playlistManager.updatePlaylist(playlist.id, { episodeIds: queueIds });
+							}
 						}
 					}
-				}
+				})();
 			})
 		);
 
 		// Sync Playlist -> Queue
 		this.registerEvent(
-			(this.app.workspace as unknown as PodcastEvents).on('podcast:playlist-updated', async (playlistId: string) => {
-				const queues = await this.queueManager.getAllQueues();
-				const derivedQueue = queues.find(q => q.sourceId === playlistId);
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:playlist-updated', (playlistId: string) => {
+				void (async () => {
+					const queues = await this.queueManager.getAllQueues();
+					const derivedQueue = queues.find(q => q.sourceId === playlistId);
 
-				if (derivedQueue) {
-					const playlist = await this.playlistManager.getPlaylist(playlistId);
-					if (playlist) {
-						const queueIds = derivedQueue.episodeIds;
-						const playlistIds = playlist.episodeIds;
+					if (derivedQueue) {
+						const playlist = await this.playlistManager.getPlaylist(playlistId);
+						if (playlist) {
+							const queueIds = derivedQueue.episodeIds;
+							const playlistIds = playlist.episodeIds;
 
-						// Check for name change
-						// Note: We use "Playlist: " prefix in PlayerView logic, so we should maintain it or check how it's stored
-						// In PodcastSidebarView.ts:966, name is set to `Playlist: ${playlist.name}`
-						const expectedName = `Playlist: ${playlist.name}`;
-						const nameChanged = derivedQueue.name !== expectedName;
-						const episodesChanged = JSON.stringify(queueIds) !== JSON.stringify(playlistIds);
+							// Check for name change
+							// Note: We use "Playlist: " prefix in PlayerView logic, so we should maintain it or check how it's stored
+							// In PodcastSidebarView.ts:966, name is set to `Playlist: ${playlist.name}`
+							const expectedName = `Playlist: ${playlist.name}`;
+							const nameChanged = derivedQueue.name !== expectedName;
+							const episodesChanged = JSON.stringify(queueIds) !== JSON.stringify(playlistIds);
 
-						if (episodesChanged || nameChanged) {
-							const updates: Partial<{ episodeIds: string[]; name: string }> = {};
+							if (episodesChanged || nameChanged) {
+								const updates: Partial<{ episodeIds: string[]; name: string }> = {};
 
-							if (episodesChanged) {
-								updates.episodeIds = playlistIds;
-							}
+								if (episodesChanged) {
+									updates.episodeIds = playlistIds;
+								}
 
-							if (nameChanged) {
-								updates.name = expectedName;
-							}
+								if (nameChanged) {
+									updates.name = expectedName;
+								}
 
-							await this.queueManager.updateQueue(derivedQueue.id, updates);
+								await this.queueManager.updateQueue(derivedQueue.id, updates);
 
-							// Try to restore current index only if episodes changed
-							if (episodesChanged) {
-								const currentEpisodeId = derivedQueue.episodeIds[derivedQueue.currentIndex];
-								const newIndex = playlistIds.indexOf(currentEpisodeId);
-								if (newIndex !== -1) {
-									await this.queueManager.jumpTo(derivedQueue.id, newIndex);
-								} else {
-									await this.queueManager.jumpTo(derivedQueue.id, 0);
+								// Try to restore current index only if episodes changed
+								if (episodesChanged) {
+									const currentEpisodeId = derivedQueue.episodeIds[derivedQueue.currentIndex];
+									const newIndex = playlistIds.indexOf(currentEpisodeId);
+									if (newIndex !== -1) {
+										await this.queueManager.jumpTo(derivedQueue.id, newIndex);
+									} else {
+										await this.queueManager.jumpTo(derivedQueue.id, 0);
+									}
 								}
 							}
 						}
 					}
-				}
+				})();
 			})
 		);
 
@@ -359,7 +365,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'subscribe',
-			name: 'Subscribe to podcast',
+			name: 'Subscribe',
 			callback: () => {
 				new SubscribePodcastModal(
 					this.app,
@@ -376,7 +382,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'open-playlists-queues',
-			name: 'Open playlists and queues',
+			name: 'Open playlists',
 			callback: () => {
 				void this.activatePlaylistQueueView();
 			}

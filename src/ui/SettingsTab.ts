@@ -34,7 +34,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 		// Header
 		new Setting(containerEl)
-			.setName('Podcast settings')
+			.setName('General')
 			.setHeading();
 
 		// === Data Storage ===
@@ -107,7 +107,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	 */
 	private addPlaybackSection(containerEl: HTMLElement): void {
 		new Setting(containerEl)
-			.setName('Default playback settings')
+			.setName('Default playback')
 			.setDesc('These settings apply to all podcasts by default. Individual podcasts can override these.')
 			.setHeading();
 
@@ -424,7 +424,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	/**
 	 * Export settings to JSON file
 	 */
-	private async exportSettings(): Promise<void> {
+	private exportSettings(): void {
 		try {
 			const settingsJson = JSON.stringify(this.settings, null, 2);
 			const blob = new Blob([settingsJson], { type: 'application/json' });
@@ -446,7 +446,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	/**
 	 * Import settings from JSON file
 	 */
-	private async importSettings(): Promise<void> {
+	private importSettings(): void {
 		const input = document.createElement('input');
 		input.type = 'file';
 		input.accept = '.json';
@@ -510,7 +510,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	/**
 	 * Import OPML file
 	 */
-	private async importOPML(): Promise<void> {
+	private importOPML(): void {
 		const input = document.createElement('input');
 		input.type = 'file';
 		input.accept = '.opml,.xml';
@@ -590,7 +590,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	/**
 	 * Import full backup
 	 */
-	private async importFullBackup(): Promise<void> {
+	private importFullBackup(): void {
 		const input = document.createElement('input');
 		input.type = 'file';
 		input.accept = '.json';

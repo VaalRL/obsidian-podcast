@@ -61,15 +61,17 @@ export class PodcastSidebarView extends ItemView {
 	}
 
 	async onload() {
-		super.onload();
+		await super.onload();
 
 		// Listen for queue/playlist updates
 		this.registerEvent(
-			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-updated', async (queueId: string) => {
-				if (this.selectedQueue && this.selectedQueue.id === queueId) {
-					this.selectedQueue = await this.plugin.getQueueManager().getQueue(queueId);
-					await this.render();
-				}
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-updated', (queueId: string) => {
+				void (async () => {
+					if (this.selectedQueue && this.selectedQueue.id === queueId) {
+						this.selectedQueue = await this.plugin.getQueueManager().getQueue(queueId);
+						await this.render();
+					}
+				})();
 			})
 		);
 
@@ -87,11 +89,13 @@ export class PodcastSidebarView extends ItemView {
 		);
 
 		this.registerEvent(
-			(this.app.workspace as unknown as PodcastEvents).on('podcast:playlist-updated', async (playlistId: string) => {
-				if (this.selectedPlaylist && this.selectedPlaylist.id === playlistId) {
-					this.selectedPlaylist = await this.plugin.getPlaylistManager().getPlaylist(playlistId);
-					await this.render();
-				}
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:playlist-updated', (playlistId: string) => {
+				void (async () => {
+					if (this.selectedPlaylist && this.selectedPlaylist.id === playlistId) {
+						this.selectedPlaylist = await this.plugin.getPlaylistManager().getPlaylist(playlistId);
+						await this.render();
+					}
+				})();
 			})
 		);
 	}
@@ -133,8 +137,9 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Called when the view is closed
 	 */
-	async onClose() {
+	async onClose(): Promise<void> {
 		// Cleanup if needed
+		return Promise.resolve();
 	}
 
 	/**
@@ -695,7 +700,7 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Render the list of episodes for the selected podcast
 	 */
-	private async renderEpisodeList(): Promise<void> {
+	private renderEpisodeList(): void {
 		if (!this.selectedPodcast) return;
 
 		const listContainer = this.sidebarContentEl.createDiv({ cls: 'episode-list-container' });
@@ -802,7 +807,7 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Handle add podcast button click
 	 */
-	private async handleAddPodcast(): Promise<void> {
+	private handleAddPodcast(): void {
 		new SubscribePodcastModal(
 			this.app,
 			this.plugin,
@@ -2140,7 +2145,7 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Handle rename playlist button click
 	 */
-	private async handleRenamePlaylist(): Promise<void> {
+	private handleRenamePlaylist(): void {
 		if (!this.selectedPlaylist) return;
 
 		new RenameModal(
@@ -2243,7 +2248,7 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Handle rename queue button click
 	 */
-	private async handleRenameQueue(): Promise<void> {
+	private handleRenameQueue(): void {
 		if (!this.selectedQueue) return;
 
 		new RenameModal(

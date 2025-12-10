@@ -42,27 +42,29 @@ export class PlayerView extends ItemView {
 	private lastQueueEpisodeIds: string[] = [];
 
 	async onload() {
-		super.onload();
+		await super.onload();
 
 		// Listen for queue updates
 		this.registerEvent(
-			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-updated', async (queueId: string) => {
-				// If current queue is updated
-				const currentQueue = await this.plugin.getQueueManager().getCurrentQueue();
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-updated', (queueId: string) => {
+				void (async () => {
+					// If current queue is updated
+					const currentQueue = await this.plugin.getQueueManager().getCurrentQueue();
 
-				if (currentQueue && currentQueue.id === queueId) {
-					// Check if episodes list actually changed
-					const idsChanged = JSON.stringify(currentQueue.episodeIds) !== JSON.stringify(this.lastQueueEpisodeIds);
+					if (currentQueue && currentQueue.id === queueId) {
+						// Check if episodes list actually changed
+						const idsChanged = JSON.stringify(currentQueue.episodeIds) !== JSON.stringify(this.lastQueueEpisodeIds);
 
-					if (idsChanged) {
-						// Content changed - full re-render
-						this.lastQueueEpisodeIds = [...currentQueue.episodeIds];
-						await this.renderPlayer();
-					} else {
-						// Only index/meta changed - just update icons to reflect new current index
-						this.updatePlayState();
+						if (idsChanged) {
+							// Content changed - full re-render
+							this.lastQueueEpisodeIds = [...currentQueue.episodeIds];
+							await this.renderPlayer();
+						} else {
+							// Only index/meta changed - just update icons to reflect new current index
+							this.updatePlayState();
+						}
 					}
-				}
+				})();
 			})
 		);
 
@@ -115,8 +117,9 @@ export class PlayerView extends ItemView {
 	/**
 	 * Called when the view is closed
 	 */
-	async onClose() {
+	async onClose(): Promise<void> {
 		this.stopUpdateInterval();
+		return Promise.resolve();
 	}
 
 	/**
@@ -423,7 +426,7 @@ export class PlayerView extends ItemView {
 				max: '3.0',
 				step: '0.1',
 				value: '1.0',
-				title: 'Playback Speed'
+				title: 'Playback speed'
 			}
 		});
 

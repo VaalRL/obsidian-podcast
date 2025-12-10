@@ -17,7 +17,7 @@ import { PodcastSearchResult } from '../model';
  */
 export class SubscribePodcastModal extends Modal {
 	plugin: PodcastPlayerPlugin;
-	onSubmit: (podcastId: string) => void;
+	onSubmit: (podcastId: string) => void | Promise<void>;
 
 	private searchResults: PodcastSearchResult[] = [];
 	private selectedFeeds: Set<string> = new Set();
@@ -28,7 +28,7 @@ export class SubscribePodcastModal extends Modal {
 	private feedUrl = '';
 	private feedUrlInput: HTMLInputElement | null = null;
 
-	constructor(app: App, plugin: PodcastPlayerPlugin, onSubmit: (podcastId: string) => void) {
+	constructor(app: App, plugin: PodcastPlayerPlugin, onSubmit: (podcastId: string) => void | Promise<void>) {
 		super(app);
 		this.plugin = plugin;
 		this.onSubmit = onSubmit;
@@ -39,12 +39,12 @@ export class SubscribePodcastModal extends Modal {
 	private opmlFeeds: { text: string; xmlUrl: string }[] = [];
 	private selectedOpmlFeeds: Set<string> = new Set();
 
-	async onOpen() {
+	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
 		contentEl.addClass('subscribe-podcast-modal');
 
-		contentEl.createEl('h2', { text: 'Subscribe to Podcast' });
+		contentEl.createEl('h2', { text: 'Subscribe to podcast' });
 
 		// Render Tabs
 		this.renderTabs(contentEl);
@@ -251,7 +251,7 @@ export class SubscribePodcastModal extends Modal {
 		});
 
 		const selectFileBtn = fileInputContainer.createEl('button', {
-			text: 'Select OPML File',
+			text: 'Select OPML file',
 			cls: 'subscribe-file-select-button'
 		});
 		setIcon(selectFileBtn, 'file-up');

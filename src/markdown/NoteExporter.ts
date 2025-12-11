@@ -217,7 +217,7 @@ export class NoteExporter {
 				if (typeof value === 'string' && value.includes(':')) {
 					lines.push(`${key}: "${value}"`);
 				} else {
-					lines.push(`${key}: ${value}`);
+					lines.push(`${key}: ${String(value)}`);
 				}
 			}
 		}
@@ -345,7 +345,7 @@ export class NoteExporter {
 		for (const [key, value] of Object.entries(variables)) {
 			if (value !== undefined && value !== null) {
 				const regex = new RegExp(`{{${key}}}`, 'g');
-				result = result.replace(regex, value.toString());
+				result = result.replace(regex, String(value));
 			}
 		}
 

@@ -256,7 +256,7 @@ export class RSSParser {
 		if (item.itunes?.episodeType) {
 			const type = item.itunes.episodeType.toLowerCase();
 			if (type === 'full' || type === 'trailer' || type === 'bonus') {
-				episodeType = type as 'full' | 'trailer' | 'bonus';
+				episodeType = type;
 			}
 		}
 

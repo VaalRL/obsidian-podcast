@@ -236,18 +236,18 @@ export class EpisodeDetailModal extends Modal {
 		});
 		setIcon(playBtn, 'play');
 		playBtn.createSpan({ text: ' Play' });
-		playBtn.addEventListener('click', () => this.handlePlay());
+		playBtn.addEventListener('click', () => void this.handlePlay());
 
 		// Add to Queue button
 		const queueBtn = actions.createEl('button');
 		setIcon(queueBtn, 'list-plus');
-		queueBtn.createSpan({ text: ' Add to Queue' });
+		queueBtn.createSpan({ text: ' Add to queue' });
 		queueBtn.addEventListener('click', () => this.handleAddToQueue());
 
 		// Add to Playlist button
 		const playlistBtn = actions.createEl('button');
 		setIcon(playlistBtn, 'folder-plus');
-		playlistBtn.createSpan({ text: ' Add to Playlist' });
+		playlistBtn.createSpan({ text: ' Add to playlist' });
 		playlistBtn.addEventListener('click', () => this.handleAddToPlaylist());
 
 		// Close button

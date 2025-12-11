@@ -88,7 +88,7 @@ export class PlayerView extends ItemView {
 	 * Get the display text for the view
 	 */
 	getDisplayText(): string {
-		return 'Podcast Player';
+		return 'Podcast player';
 	}
 
 	/**
@@ -204,7 +204,7 @@ export class PlayerView extends ItemView {
 			attr: { 'aria-label': 'Previous episode' }
 		});
 		setIcon(prevBtn, 'skip-back');
-		prevBtn.addEventListener('click', () => this.handlePrevious());
+		prevBtn.addEventListener('click', () => void this.handlePrevious());
 
 		// Skip backward button
 		const skipBackBtn = controlsSection.createEl('button', {
@@ -212,7 +212,7 @@ export class PlayerView extends ItemView {
 			attr: { 'aria-label': 'Skip backward 15s' }
 		});
 		setIcon(skipBackBtn, 'rewind');
-		skipBackBtn.addEventListener('click', () => this.handleSkipBackward());
+		skipBackBtn.addEventListener('click', () => void this.handleSkipBackward());
 
 		// Play/Pause button
 		const playPauseBtn = controlsSection.createEl('button', {
@@ -228,7 +228,7 @@ export class PlayerView extends ItemView {
 			attr: { 'aria-label': 'Skip forward 30s' }
 		});
 		setIcon(skipForwardBtn, 'fast-forward');
-		skipForwardBtn.addEventListener('click', () => this.handleSkipForward());
+		skipForwardBtn.addEventListener('click', () => void this.handleSkipForward());
 
 		// Next button
 		const nextBtn = controlsSection.createEl('button', {
@@ -236,7 +236,7 @@ export class PlayerView extends ItemView {
 			attr: { 'aria-label': 'Next episode' }
 		});
 		setIcon(nextBtn, 'skip-forward');
-		nextBtn.addEventListener('click', () => this.handleNext());
+		nextBtn.addEventListener('click', () => void this.handleNext());
 
 		// Add to Note button
 		const addNoteBtn = controlsSection.createEl('button', {
@@ -244,7 +244,7 @@ export class PlayerView extends ItemView {
 			attr: { 'aria-label': 'Add note to daily note' }
 		});
 		setIcon(addNoteBtn, 'file-plus');
-		addNoteBtn.addEventListener('click', () => this.handleAddNote());
+		addNoteBtn.addEventListener('click', () => void this.handleAddNote());
 	}
 
 
@@ -765,7 +765,7 @@ export class PlayerView extends ItemView {
 						}
 					});
 				} else {
-					if (podcastEl) podcastEl.textContent = 'Unknown Podcast';
+					if (podcastEl) podcastEl.textContent = 'Unknown podcast';
 					if (thumbnailEl) {
 						thumbnailEl.removeClass('podcast-visible');
 						thumbnailEl.addClass('podcast-hidden');

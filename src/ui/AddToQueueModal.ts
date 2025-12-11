@@ -34,7 +34,7 @@ export class AddToQueueModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl('h2', { text: 'Add to Queue' });
+		contentEl.createEl('h2', { text: 'Add to queue' });
 
 		// Load existing queues
 		const queueManager = this.plugin.getQueueManager();

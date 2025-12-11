@@ -34,7 +34,7 @@ export class AddToPlaylistModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl('h2', { text: 'Add to Playlist' });
+		contentEl.createEl('h2', { text: 'Add to playlist' });
 
 		// Load existing playlists
 		const playlistManager = this.plugin.getPlaylistManager();

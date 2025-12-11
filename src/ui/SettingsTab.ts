@@ -325,7 +325,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setName('Export full backup')
 			.setDesc('Export all data including subscriptions, playlists, queues, progress, and settings')
 			.addButton(button => button
-				.setButtonText('Export Backup')
+				.setButtonText('Export backup')
 				.onClick(() => {
 					void this.exportFullBackup();
 				}));
@@ -335,7 +335,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setName('Import full backup')
 			.setDesc('Restore all data from a backup file')
 			.addButton(button => button
-				.setButtonText('Import Backup')
+				.setButtonText('Import backup')
 				.setWarning()
 				.onClick(() => {
 					void this.importFullBackup();
@@ -383,7 +383,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setName('Delete all data')
 			.setDesc('Delete all subscriptions, playlists, queues, progress, and cache. This cannot be undone!')
 			.addButton(button => button
-				.setButtonText('Delete All')
+				.setButtonText('Delete all')
 				.setWarning()
 				.onClick(async () => {
 					await this.deleteAllData();
@@ -645,7 +645,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 	private async deleteAllData(): Promise<void> {
 		// First confirmation with details
 		const firstConfirm = await showConfirmModal(this.app, {
-			title: 'Delete All Data',
+			title: 'Delete all data',
 			message: 'WARNING: This will permanently delete ALL your podcast data including:\n\n• All podcast subscriptions\n• All playlists\n• All queues\n• All playback progress\n• All cached feeds and images\n• All backups\n\nThis action cannot be undone!',
 			confirmText: 'Continue',
 			confirmClass: 'warning'
@@ -657,9 +657,9 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 
 		// Second confirmation requiring text input
 		const finalConfirm = await showConfirmModal(this.app, {
-			title: 'Final Confirmation',
+			title: 'Final confirmation',
 			message: 'You are about to permanently delete all podcast data.\n\nThis is your last chance to cancel.',
-			confirmText: 'Delete All',
+			confirmText: 'Delete all',
 			confirmClass: 'destructive',
 			requireInput: 'DELETE',
 			inputPlaceholder: 'Type DELETE to confirm'

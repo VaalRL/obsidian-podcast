@@ -47,7 +47,7 @@ export class PlaylistQueueView extends ItemView {
 	 * Get the display text for the view
 	 */
 	getDisplayText(): string {
-		return 'Playlists & Queues';
+		return 'Playlists & queues';
 	}
 
 	/**
@@ -567,7 +567,7 @@ export class PlaylistQueueView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle('View Details')
+				.setTitle('View details')
 				.setIcon('list')
 				.onClick(() => {
 					this.selectedPlaylist = playlist;
@@ -615,7 +615,7 @@ export class PlaylistQueueView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle('View Details')
+				.setTitle('View details')
 				.setIcon('list')
 				.onClick(() => {
 					this.selectedQueue = queue;
@@ -680,7 +680,7 @@ export class PlaylistQueueView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle('View Details')
+				.setTitle('View details')
 				.setIcon('info')
 				.onClick(() => {
 					new EpisodeDetailModal(this.app, this.plugin, episode).open();

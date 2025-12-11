@@ -127,7 +127,7 @@ export class PodcastSettingsModal extends Modal {
 				}));
 
 		// Auto-add Section
-		contentEl.createEl('h3', { text: 'Auto-add New Episodes' });
+		contentEl.createEl('h3', { text: 'Auto-add new episodes' });
 
 		new Setting(contentEl)
 			.setName('Enable auto-add')
@@ -183,8 +183,8 @@ export class PodcastSettingsModal extends Modal {
 				.setName('Position')
 				.setDesc('Where to add the episode in the list')
 				.addDropdown(dropdown => dropdown
-					.addOption('top', 'Top (Beginning)')
-					.addOption('bottom', 'Bottom (End)')
+					.addOption('top', 'Top (beginning)')
+					.addOption('bottom', 'Bottom (end)')
 					.setValue(this.autoAddPosition)
 					.onChange(value => {
 						this.autoAddPosition = value as 'top' | 'bottom';
@@ -195,7 +195,7 @@ export class PodcastSettingsModal extends Modal {
 		const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
 
 		// Reset to defaults button
-		buttonContainer.createEl('button', { text: 'Reset to Global Defaults' })
+		buttonContainer.createEl('button', { text: 'Reset to global defaults' })
 			.addEventListener('click', () => {
 				this.resetToDefaults();
 			});

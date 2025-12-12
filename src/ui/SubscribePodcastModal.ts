@@ -198,12 +198,12 @@ export class SubscribePodcastModal extends Modal {
 		const urlSection = container.createDiv({ cls: 'subscribe-url-section' });
 
 		urlSection.createEl('p', {
-			text: 'Enter the RSS or Atom feed URL of the podcast you want to subscribe to',
+			text: 'Enter the feed address of the podcast you want to subscribe to',
 			cls: 'subscribe-url-desc'
 		});
 
 		new Setting(urlSection)
-			.setName('Feed url')
+			.setName('Feed address')
 			.setDesc('Example: https://example.com/podcast/feed.xml')
 			.addText(text => {
 				text
@@ -238,7 +238,7 @@ export class SubscribePodcastModal extends Modal {
 		const fileSection = container.createDiv({ cls: 'subscribe-file-section' });
 
 		fileSection.createEl('p', {
-			text: 'Import podcasts from an OPML file exported from another podcast app',
+			text: 'Import podcasts from a file exported from another podcast app',
 			cls: 'subscribe-file-desc'
 		});
 
@@ -307,7 +307,7 @@ export class SubscribePodcastModal extends Modal {
 			// Check for parsing errors
 			const parseError = doc.querySelector('parsererror');
 			if (parseError) {
-				new Notice('Invalid OPML file: unable to parse XML');
+				new Notice('Invalid file: unable to parse content');
 				return;
 			}
 
@@ -461,7 +461,7 @@ export class SubscribePodcastModal extends Modal {
 			});
 
 			errorDiv.createEl('p', {
-				text: 'Could not connect to iTunes API. This might be due to',
+				text: 'Could not connect to the podcast search service. This might be due to',
 				cls: 'subscribe-error-detail'
 			});
 
@@ -471,10 +471,10 @@ export class SubscribePodcastModal extends Modal {
 
 			reasonsList.createEl('li', { text: 'network connection issues' });
 			reasonsList.createEl('li', { text: 'network request restrictions' });
-			reasonsList.createEl('li', { text: 'iTunes API temporarily unavailable' });
+			reasonsList.createEl('li', { text: 'search service temporarily unavailable' });
 
 			errorDiv.createEl('p', {
-				text: 'Suggestion: try entering the RSS feed URL directly to subscribe.',
+				text: 'Suggestion: try entering the feed address directly to subscribe.',
 				cls: 'subscribe-error-suggestion'
 			});
 		}

@@ -304,7 +304,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 		// OPML Export
 		new Setting(containerEl)
 			.setName('Export subscriptions')
-			.setDesc('Export your podcast subscriptions to OPML format (compatible with other podcast apps)')
+			.setDesc('Save your podcast subscriptions to a file that can be imported into other podcast apps')
 			.addButton(button => button
 				.setButtonText('Export')
 				.onClick(() => {
@@ -314,7 +314,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 		// OPML Import
 		new Setting(containerEl)
 			.setName('Import subscriptions')
-			.setDesc('Import podcast subscriptions from an OPML file')
+			.setDesc('Load podcast subscriptions from a file exported from another podcast app')
 			.addButton(button => button
 				.setButtonText('Import')
 				.onClick(() => {
@@ -499,7 +499,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			a.click();
 
 			URL.revokeObjectURL(url);
-			new Notice('Subscriptions exported to OPML');
+			new Notice('Subscriptions exported successfully');
 		} catch (error) {
 			logger.error('Failed to export OPML', error);
 			new Notice('Failed to export subscriptions');

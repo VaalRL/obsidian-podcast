@@ -427,13 +427,15 @@ export class PlaylistQueueView extends ItemView {
 			text: `Shuffle: ${this.selectedQueue.shuffle ? 'On' : 'Off'}`,
 			cls: 'pq-control-button'
 		});
-		shuffleBtn.addEventListener('click', async () => {
-			if (this.selectedQueue) {
-				const queueManager = this.plugin.getQueueManager();
-				await queueManager.toggleShuffle(this.selectedQueue.id);
-				this.selectedQueue = await queueManager.getQueue(this.selectedQueue.id);
-				await this.render();
-			}
+		shuffleBtn.addEventListener('click', () => {
+			void (async () => {
+				if (this.selectedQueue) {
+					const queueManager = this.plugin.getQueueManager();
+					await queueManager.toggleShuffle(this.selectedQueue.id);
+					this.selectedQueue = await queueManager.getQueue(this.selectedQueue.id);
+					await this.render();
+				}
+			})();
 		});
 
 		// Repeat mode cycle
@@ -441,16 +443,18 @@ export class PlaylistQueueView extends ItemView {
 			text: `Repeat: ${this.formatRepeatMode(this.selectedQueue.repeat)}`,
 			cls: 'pq-control-button'
 		});
-		repeatBtn.addEventListener('click', async () => {
-			if (this.selectedQueue) {
-				const queueManager = this.plugin.getQueueManager();
-				const modes: Array<'none' | 'one' | 'all'> = ['none', 'one', 'all'];
-				const currentIndex = modes.indexOf(this.selectedQueue.repeat);
-				const nextMode = modes[(currentIndex + 1) % modes.length];
-				await queueManager.setRepeat(this.selectedQueue.id, nextMode);
-				this.selectedQueue = await queueManager.getQueue(this.selectedQueue.id);
-				await this.render();
-			}
+		repeatBtn.addEventListener('click', () => {
+			void (async () => {
+				if (this.selectedQueue) {
+					const queueManager = this.plugin.getQueueManager();
+					const modes: Array<'none' | 'one' | 'all'> = ['none', 'one', 'all'];
+					const currentIndex = modes.indexOf(this.selectedQueue.repeat);
+					const nextMode = modes[(currentIndex + 1) % modes.length];
+					await queueManager.setRepeat(this.selectedQueue.id, nextMode);
+					this.selectedQueue = await queueManager.getQueue(this.selectedQueue.id);
+					await this.render();
+				}
+			})();
 		});
 
 		// Episodes list

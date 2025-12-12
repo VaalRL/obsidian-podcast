@@ -307,7 +307,7 @@ export class SubscribePodcastModal extends Modal {
 			// Check for parsing errors
 			const parseError = doc.querySelector('parsererror');
 			if (parseError) {
-				new Notice('Invalid OPML file: Unable to parse XML');
+				new Notice('Invalid OPML file: unable to parse XML');
 				return;
 			}
 
@@ -469,7 +469,7 @@ export class SubscribePodcastModal extends Modal {
 				cls: 'subscribe-error-reasons'
 			});
 
-			reasonsList.createEl('li', { text: 'Network connection issues' });
+			reasonsList.createEl('li', { text: 'network connection issues' });
 			reasonsList.createEl('li', { text: 'Obsidian network request restrictions' });
 			reasonsList.createEl('li', { text: 'iTunes API being temporarily unavailable' });
 

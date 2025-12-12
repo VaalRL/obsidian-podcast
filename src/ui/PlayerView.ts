@@ -119,7 +119,7 @@ export class PlayerView extends ItemView {
 	 * Called when the view is closed
 	 * Note: async is required to match ItemView.onClose() signature even without await
 	 */
-	// eslint-disable-next-line @typescript-eslint/require-await
+	// eslint-disable-next-line @typescript-eslint/require-await -- Override must match base class ItemView.onClose() signature
 	async onClose(): Promise<void> {
 		this.stopUpdateInterval();
 	}
@@ -1312,7 +1312,7 @@ export class PlayerView extends ItemView {
 					if (isCurrent) {
 						// Current episode - toggle play/pause
 						if (playerState.status === 'playing') {
-							await playerController.pause();
+							playerController.pause();
 						} else {
 							await playerController.play();
 						}

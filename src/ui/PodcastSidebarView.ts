@@ -156,7 +156,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Render content based on current view
 		if (this.selectedPodcast) {
-			await this.renderEpisodeList();
+			this.renderEpisodeList();
 		} else if (this.selectedPlaylist) {
 			await this.renderPlaylistDetails();
 		} else if (this.selectedQueue) {
@@ -1893,13 +1893,13 @@ export class PodcastSidebarView extends ItemView {
 					if (isCurrentlyPlaying) {
 						// Current episode - toggle play/pause
 						if (currentState.status === 'playing') {
-							await this.plugin.playerController.pause();
+							this.plugin.playerController.pause();
 						} else {
 							await this.plugin.playerController.play();
 						}
 					} else {
 						// Other episodes - play the episode
-						void this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined);
+						await this.handlePlayEpisode(episode, false, this.selectedPlaylist || undefined);
 					}
 				} catch (error) {
 					logger.error('Failed to play/pause episode', error);
@@ -2002,7 +2002,7 @@ export class PodcastSidebarView extends ItemView {
 					if (isCurrentlyPlaying) {
 						// Current episode - toggle play/pause
 						if (currentState.status === 'playing') {
-							await this.plugin.playerController.pause();
+							this.plugin.playerController.pause();
 						} else {
 							await this.plugin.playerController.play();
 						}
@@ -2015,7 +2015,7 @@ export class PodcastSidebarView extends ItemView {
 							await queueManager.jumpTo(this.selectedQueue.id, index);
 							await this.plugin.playerController.loadEpisode(episode, true);
 						} else {
-							void this.handlePlayEpisode(episode);
+							await this.handlePlayEpisode(episode);
 						}
 					}
 				} catch (error) {
@@ -2247,7 +2247,7 @@ export class PodcastSidebarView extends ItemView {
 		setIcon(playAllBtn, 'play');
 		playAllBtn.addEventListener('click', () => {
 			if (this.selectedQueue) {
-				this.handlePlayQueue(this.selectedQueue);
+				void this.handlePlayQueue(this.selectedQueue);
 			}
 		});
 
@@ -2340,7 +2340,7 @@ export class PodcastSidebarView extends ItemView {
 				.setIcon('list')
 				.onClick(() => {
 					this.selectedPlaylist = playlist;
-					this.render();
+					void this.render();
 				})
 		);
 

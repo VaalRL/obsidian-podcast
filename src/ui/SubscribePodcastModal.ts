@@ -207,7 +207,7 @@ export class SubscribePodcastModal extends Modal {
 			.setDesc('Example: https://example.com/podcast/feed.xml')
 			.addText(text => {
 				text
-					.setPlaceholder('https://...')
+					.setPlaceholder('Enter feed address')
 					.setValue(this.feedUrl)
 					.onChange(value => {
 						this.feedUrl = value;
@@ -469,9 +469,9 @@ export class SubscribePodcastModal extends Modal {
 				cls: 'subscribe-error-reasons'
 			});
 
-			reasonsList.createEl('li', { text: 'network connection issues' });
-			reasonsList.createEl('li', { text: 'network request restrictions' });
-			reasonsList.createEl('li', { text: 'search service temporarily unavailable' });
+			reasonsList.createEl('li', { text: 'Network connection issues' });
+			reasonsList.createEl('li', { text: 'Network request restrictions' });
+			reasonsList.createEl('li', { text: 'Search service temporarily unavailable' });
 
 			errorDiv.createEl('p', {
 				text: 'Suggestion: try entering the feed address directly to subscribe.',

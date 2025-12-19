@@ -469,4 +469,45 @@ export class PodcastService {
 			};
 		}
 	}
+
+	/**
+	 * Get podcast metadata from a feed URL (without subscribing)
+	 * Useful for previewing a podcast before subscribing
+	 */
+	async getPodcastMetadata(feedUrl: string): Promise<PodcastSearchResult | null> {
+		logger.methodEntry('PodcastService', 'getPodcastMetadata', feedUrl);
+
+		try {
+			// Validate feed URL
+			if (!FeedService.validateFeedUrl(feedUrl)) {
+				logger.warn('Invalid feed URL');
+				return null;
+			}
+
+			// Fetch feed lightly (we don't need to cache it yet)
+			const { podcast } = await this.feedService.fetchFeed(feedUrl, {
+				useCache: true, // Use cache if available (e.g. from previous attempts)
+				cacheTTL: 300000, // 5 minutes
+			});
+
+			logger.methodExit('PodcastService', 'getPodcastMetadata');
+
+			// Transform to search result format
+			return {
+				title: podcast.title,
+				author: podcast.author,
+				description: podcast.description,
+				feedUrl: podcast.feedUrl,
+				artworkUrl: podcast.imageUrl,
+				// We don't have these from a raw feed usually, but that's fine
+				episodeCount: podcast.episodes?.length,
+				genres: podcast.categories,
+			};
+
+		} catch (error) {
+			logger.error('Failed to get podcast metadata', error);
+			// Don't throw, just return null so the UI can handle it or try something else
+			return null;
+		}
+	}
 }

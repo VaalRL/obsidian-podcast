@@ -94,12 +94,11 @@ export class iTunesSearchService {
 			const response = await retryWithBackoff(
 				async () => {
 					try {
-						// Try Obsidian requestUrl first (bypasses CORS restrictions in Electron)
+						// Try Obsidian requestUrl first (bypasses CORS restrictions in Electron usually)
 						const result = await requestUrl({
 							url,
 							method: 'GET',
 							headers: {
-								'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
 								'Accept': 'application/json',
 							},
 							throw: false,
@@ -107,11 +106,10 @@ export class iTunesSearchService {
 
 						// Check for HTTP errors
 						if (result.status !== 200) {
-							// For client errors (4xx), log and return empty to avoid retry
-							// For server errors (5xx), throw to trigger retry
 							if (result.status >= 400 && result.status < 500) {
 								logger.warn(`iTunes API returned status ${result.status}`);
-								return { status: result.status, json: { resultCount: 0, results: [] }, headers: {}, arrayBuffer: new ArrayBuffer(0), text: '' };
+								// Return empty result for client errors
+								return { status: result.status, json: { resultCount: 0, results: [] } as iTunesSearchResponse, headers: {}, arrayBuffer: new ArrayBuffer(0), text: '' };
 							}
 							throw new NetworkError(
 								`iTunes API returned status ${result.status}`,
@@ -121,11 +119,31 @@ export class iTunesSearchService {
 
 						return result;
 					} catch (err) {
-						logger.error('requestUrl failed', err);
-						throw new NetworkError(
-							'Failed to connect to iTunes API',
-							url
-						);
+						logger.warn(`requestUrl failed for ${url}, trying fallback to fetch`, err);
+
+						// Fallback to native fetch
+						try {
+							const fetchResponse = await fetch(url);
+							if (!fetchResponse.ok) {
+								throw new Error(`Fetch returned status ${fetchResponse.status}`);
+							}
+							const json = await fetchResponse.json();
+
+							// Mock an Obsidian RequestUrlResponse
+							return {
+								status: fetchResponse.status,
+								headers: {},
+								arrayBuffer: await new Response(JSON.stringify(json)).arrayBuffer(),
+								json: json,
+								text: JSON.stringify(json)
+							};
+						} catch (fetchErr) {
+							logger.error('Both requestUrl and fetch fallback failed', fetchErr);
+							throw new NetworkError(
+								`Failed to connect to iTunes API: ${fetchErr instanceof Error ? fetchErr.message : 'Unknown error'}`,
+								url
+							);
+						}
 					}
 				},
 				{
@@ -134,7 +152,6 @@ export class iTunesSearchService {
 					maxDelay: 5000,
 				}
 			);
-
 			// Parse response
 			const data = response.json as iTunesSearchResponse;
 

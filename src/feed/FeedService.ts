@@ -12,6 +12,8 @@ import { Podcast, Episode } from '../model';
 import { RSSParser } from './RSSParser';
 import { AtomParser } from './AtomParser';
 import { FeedCacheStore } from '../storage/CacheStore';
+import * as https from 'https';
+import * as url from 'url';
 
 /**
  * Feed type enumeration
@@ -168,10 +170,15 @@ export class FeedService {
 			const response = await retryWithBackoff(
 				async () => {
 					const headers: Record<string, string> = {
-						'User-Agent': userAgent,
 						Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml',
 						'Accept-Language': 'en-US,en;q=0.9',
 					};
+
+					// Add User-Agent only if explicitly provided (and not the default problematic one)
+					// We rely on Obsidian's default or no UA to avoid blocking
+					if (userAgent && userAgent !== 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36') {
+						headers['User-Agent'] = userAgent;
+					}
 
 					// Add conditional request headers
 					if (etag) {
@@ -191,7 +198,6 @@ export class FeedService {
 					const response = await requestUrl(requestParam);
 
 					if (response.status === 304) {
-						// Not modified
 						throw new Error('NOT_MODIFIED');
 					}
 
@@ -225,8 +231,76 @@ export class FeedService {
 				throw error;
 			}
 
-			logger.error('Failed to fetch feed XML', error);
-			throw new NetworkError('Failed to fetch feed', feedUrl, error);
+			logger.warn(`requestUrl failed for ${feedUrl}, trying fallback to fetch`, error);
+
+			// Fallback to native fetch
+			try {
+				const fetchResponse = await fetch(feedUrl);
+				if (!fetchResponse.ok) {
+					throw new Error(`Fetch returned status ${fetchResponse.status}`);
+				}
+				const xml = await fetchResponse.text();
+
+				// Standard fetch headers are a bit different, but we try to get what we can
+				const responseEtag = fetchResponse.headers.get('etag') || undefined;
+				const responseLastModified = fetchResponse.headers.get('last-modified') || undefined;
+
+				return {
+					xml,
+					responseEtag,
+					responseLastModified
+				};
+			} catch (fetchErr) {
+				logger.warn('fetch fallback failed, trying Node https', fetchErr);
+
+				// Final fallback: Node.js native https module
+				// This bypasses Electron/Chromium network stack completely
+				try {
+					return await new Promise((resolve, reject) => {
+						const urlObj = new url.URL(feedUrl);
+						const options = {
+							hostname: urlObj.hostname,
+							path: urlObj.pathname + urlObj.search,
+							method: 'GET',
+							headers: {
+								'User-Agent': userAgent || 'Obsidian/1.0.0', // Minimal UA
+								'Accept': '*/*',
+							},
+							rejectUnauthorized: false // Be permissive with SSL to avoid handshake failures on some setups
+						};
+
+						const req = https.request(options, (res: any) => {
+							let data = '';
+
+							res.on('data', (chunk: any) => {
+								data += chunk;
+							});
+
+							res.on('end', () => {
+								if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+									resolve({
+										xml: data,
+										responseEtag: res.headers.etag,
+										responseLastModified: res.headers['last-modified']
+									});
+								} else {
+									reject(new Error(`HTTPS Node request returned status ${res.statusCode}`));
+								}
+							});
+						});
+
+						req.on('error', (e: any) => {
+							reject(e);
+						});
+
+						req.end();
+					});
+
+				} catch (nodeErr) {
+					logger.error('All fetch methods failed', nodeErr);
+					throw new NetworkError('Failed to fetch feed', feedUrl, nodeErr);
+				}
+			}
 		}
 	}
 

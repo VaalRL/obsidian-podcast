@@ -440,9 +440,21 @@ export class SubscribePodcastModal extends Modal {
 				text: 'Searching...'
 			});
 
-			// Perform search
 			const podcastService = this.plugin.getPodcastService();
-			this.searchResults = await podcastService.searchOnline(query, { limit: 50 });
+
+			// Check if query is a URL
+			if (this.isValidUrl(query)) {
+				const metadata = await podcastService.getPodcastMetadata(query);
+				if (metadata) {
+					this.searchResults = [metadata];
+				} else {
+					this.searchResults = [];
+				}
+			} else {
+				// Perform standard online search
+				this.searchResults = await podcastService.searchOnline(query, { limit: 50 });
+			}
+
 			this.currentPage = 0;
 
 			// Render results

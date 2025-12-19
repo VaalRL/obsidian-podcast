@@ -14,3 +14,4 @@ export { SubscribePodcastModal } from './SubscribePodcastModal';
 export { PodcastSettingsModal } from './PodcastSettingsModal';
 export { EpisodeDetailModal } from './EpisodeDetailModal';
 export { TextInputModal } from './TextInputModal';
+export { MiniPlayer } from './MiniPlayer';

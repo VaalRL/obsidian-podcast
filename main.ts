@@ -16,7 +16,8 @@ import {
 	PODCAST_SIDEBAR_VIEW_TYPE,
 	PlaylistQueueView,
 	PLAYLIST_QUEUE_VIEW_TYPE,
-	SubscribePodcastModal
+	SubscribePodcastModal,
+	MiniPlayer
 } from './src/ui';
 import { PlaylistStore, PlaylistManager } from './src/playlist';
 import { QueueStore, QueueManager } from './src/queue';
@@ -84,6 +85,9 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 	// Backup layer
 	private backupService: BackupService;
+
+	// UI layer
+	private miniPlayer: MiniPlayer;
 
 	/**
 	 * Plugin lifecycle: Called when the plugin is loaded
@@ -340,6 +344,10 @@ export default class PodcastPlayerPlugin extends Plugin {
 		// Register settings tab
 		this.addSettingTab(new PodcastPlayerSettingTab(this.app, this));
 
+		// Initialize Mini Player
+		this.miniPlayer = new MiniPlayer(this);
+		this.miniPlayer.onload();
+
 		// Add ribbon icon for quick access - opens both left and right panels
 		this.addRibbonIcon('podcast', 'Podcast player', () => {
 			void this.activateSidebarView(); // Left panel: Podcast management
@@ -415,6 +423,11 @@ export default class PodcastPlayerPlugin extends Plugin {
 		// Stop backup service
 		if (this.backupService) {
 			this.backupService.stop();
+		}
+
+		// Unload Mini Player
+		if (this.miniPlayer) {
+			this.miniPlayer.unload();
 		}
 	}
 

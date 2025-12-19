@@ -2061,3 +2061,61 @@
     height: 50px !important;
     width: auto !important;
 }
+
+/* ==========================================================================
+   Mini Player (Status Bar)
+   ========================================================================== */
+
+.podcast-mini-player {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2-2);
+    padding: 0 var(--size-2-2);
+    cursor: pointer;
+    max-width: 200px;
+}
+
+.podcast-mini-player.is-hidden {
+    display: none !important;
+}
+
+.podcast-mini-player .mini-player-container {
+    display: flex;
+    align-items: center;
+    gap: var(--size-2-2);
+    width: 100%;
+}
+
+.podcast-mini-player .mini-player-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    color: var(--text-normal);
+    flex-shrink: 0;
+}
+
+.podcast-mini-player .mini-player-btn:hover {
+    color: var(--interactive-accent);
+}
+
+.podcast-mini-player .mini-player-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.podcast-mini-player .mini-player-title {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-normal);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+    flex: 1;
+}
+
+.podcast-mini-player:hover .mini-player-title {
+    color: var(--interactive-accent);
+}

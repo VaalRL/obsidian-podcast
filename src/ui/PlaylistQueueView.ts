@@ -6,13 +6,22 @@
  * - Queues (playback queues)
  */
 
-import { ItemView, WorkspaceLeaf, Menu, Notice, setIcon } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Menu, Notice, setIcon, Events } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Playlist, Queue, Episode } from '../model';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
 import { logger } from '../utils/Logger';
 
 export const PLAYLIST_QUEUE_VIEW_TYPE = 'playlist-queue-view';
+
+// Type-safe event registration helper
+type PodcastEvents = Events & {
+	on(name: 'podcast:queue-updated', callback: (queueId: string) => void): ReturnType<Events['on']>;
+	on(name: 'podcast:player-state-updated', callback: () => void): ReturnType<Events['on']>;
+	on(name: 'podcast:episode-changed', callback: () => void): ReturnType<Events['on']>;
+	on(name: 'podcast:playlist-updated', callback: (playlistId: string) => void): ReturnType<Events['on']>;
+	on(name: 'podcast:queue-changed', callback: () => void): ReturnType<Events['on']>;
+};
 
 /**
  * View mode: playlists or queues
@@ -35,6 +44,31 @@ export class PlaylistQueueView extends ItemView {
 	constructor(leaf: WorkspaceLeaf, plugin: PodcastPlayerPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+	}
+
+	private lastQueueEpisodeIds: string[] = [];
+
+	onload() {
+		super.onload();
+
+		// Register event listeners
+		this.registerEvent(
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-changed', () => {
+				void this.render();
+			})
+		);
+
+		this.registerEvent(
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:playlist-updated', () => {
+				void this.render();
+			})
+		);
+
+		this.registerEvent(
+			(this.app.workspace as unknown as PodcastEvents).on('podcast:queue-updated', () => {
+				void this.render();
+			})
+		);
 	}
 
 	/**

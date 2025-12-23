@@ -150,7 +150,7 @@ export class DailyNoteService {
     ): string {
         const durationFormatted = this.formatDuration(duration);
 
-        return `- **${timestamp}** - 完成收聽：[[${podcastTitle}]] - ${episodeTitle} (${durationFormatted})`;
+        return `- **${timestamp}** - Finished listening: [[${podcastTitle}]] - ${episodeTitle} (${durationFormatted})`;
     }
 
     /**

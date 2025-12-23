@@ -198,18 +198,22 @@ export default class PodcastPlayerPlugin extends Plugin {
 						logger.error('Failed to log to daily note', error);
 					}
 
-					// When an episode ends, try to play the next one from the queue
-					// and remove the played episode (queue behavior)
+					// When an episode ends, check if we need to update the queue
 					const currentQueue = await this.queueManager.getCurrentQueue();
-					if (currentQueue && currentQueue.autoPlayNext) {
+					if (currentQueue) {
+						// Always try to move to next/remove played episode to keep queue fresh
+						// This ensures the played episode is removed from the UI even if auto-play is off
 						const nextEpisodeId = await this.queueManager.nextAndRemovePlayed(currentQueue.id);
-						if (nextEpisodeId) {
+
+						// Only auto-play if enabled
+						if (currentQueue.autoPlayNext && nextEpisodeId) {
 							// Load and play the next episode
 							const nextEpisode = await this.episodeManager.getEpisodeWithProgress(nextEpisodeId);
 							if (nextEpisode) {
 								await this.playerController.loadEpisode(nextEpisode, true, true);
 							}
 						}
+
 						// Trigger UI refresh
 						this.app.workspace.trigger('podcast:queue-changed');
 					}

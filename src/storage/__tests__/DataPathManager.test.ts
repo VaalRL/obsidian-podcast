@@ -43,13 +43,13 @@ describe('DataPathManager', () => {
 			adapter: mockAdapter,
 		} as any;
 
-		manager = new DataPathManager(mockVault, '.obsidian/plugins/podcast-player/data');
+		manager = new DataPathManager(mockVault, '.obsidian/plugins/podcasts/data');
 	});
 
 	describe('constructor', () => {
 		it('should create manager with vault and base path', () => {
 			expect(manager).toBeInstanceOf(DataPathManager);
-			expect(normalizePath).toHaveBeenCalledWith('.obsidian/plugins/podcast-player/data');
+			expect(normalizePath).toHaveBeenCalledWith('.obsidian/plugins/podcasts/data');
 		});
 
 		it('should build folder structure', () => {
@@ -69,9 +69,9 @@ describe('DataPathManager', () => {
 	describe('getStructure', () => {
 		it('should return folder structure', () => {
 			const structure = manager.getStructure();
-			expect(structure.root).toBe('.obsidian/plugins/podcast-player/data');
-			expect(structure.subscriptions).toBe('.obsidian/plugins/podcast-player/data/subscriptions');
-			expect(structure.playlists).toBe('.obsidian/plugins/podcast-player/data/playlists');
+			expect(structure.root).toBe('.obsidian/plugins/podcasts/data');
+			expect(structure.subscriptions).toBe('.obsidian/plugins/podcasts/data/subscriptions');
+			expect(structure.playlists).toBe('.obsidian/plugins/podcasts/data/playlists');
 		});
 
 		it('should return a copy of structure', () => {
@@ -85,7 +85,7 @@ describe('DataPathManager', () => {
 	describe('getBasePath', () => {
 		it('should return base path', () => {
 			const basePath = manager.getBasePath();
-			expect(basePath).toBe('.obsidian/plugins/podcast-player/data');
+			expect(basePath).toBe('.obsidian/plugins/podcasts/data');
 		});
 	});
 
@@ -110,9 +110,9 @@ describe('DataPathManager', () => {
 
 			// Should create base directory + 8 subdirectories
 			expect(mockAdapter.mkdir).toHaveBeenCalledTimes(9);
-			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcast-player/data');
-			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcast-player/data/subscriptions');
-			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcast-player/data/playlists');
+			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcasts/data');
+			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcasts/data/subscriptions');
+			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcasts/data/playlists');
 		});
 
 		it('should not create directories if they exist', async () => {
@@ -134,8 +134,8 @@ describe('DataPathManager', () => {
 			await manager.ensureDirectories();
 
 			expect(mockAdapter.mkdir).toHaveBeenCalledTimes(2);
-			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcast-player/data/subscriptions');
-			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcast-player/data/playlists');
+			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcasts/data/subscriptions');
+			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcasts/data/playlists');
 		});
 
 		it('should throw StorageError on failure', async () => {
@@ -148,7 +148,7 @@ describe('DataPathManager', () => {
 	describe('getFilePath', () => {
 		it('should return full path for file in subdirectory', () => {
 			const path = manager.getFilePath('subscriptions', 'podcast.json');
-			expect(path).toBe('.obsidian/plugins/podcast-player/data/subscriptions/podcast.json');
+			expect(path).toBe('.obsidian/plugins/podcasts/data/subscriptions/podcast.json');
 		});
 
 		it('should normalize path', () => {
@@ -158,10 +158,10 @@ describe('DataPathManager', () => {
 
 		it('should work with different subdirectories', () => {
 			const cachePath = manager.getFilePath('cacheFeed', 'feed-123.json');
-			expect(cachePath).toBe('.obsidian/plugins/podcast-player/data/cache/feeds/feed-123.json');
+			expect(cachePath).toBe('.obsidian/plugins/podcasts/data/cache/feeds/feed-123.json');
 
 			const backupPath = manager.getFilePath('backups', 'backup.json');
-			expect(backupPath).toBe('.obsidian/plugins/podcast-player/data/backups/backup.json');
+			expect(backupPath).toBe('.obsidian/plugins/podcasts/data/backups/backup.json');
 		});
 	});
 
@@ -223,7 +223,7 @@ describe('DataPathManager', () => {
 			const files = await manager.listFiles('subscriptions');
 
 			expect(files).toEqual(['file1.json', 'file2.json']);
-			expect(mockAdapter.list).toHaveBeenCalledWith('.obsidian/plugins/podcast-player/data/subscriptions');
+			expect(mockAdapter.list).toHaveBeenCalledWith('.obsidian/plugins/podcasts/data/subscriptions');
 		});
 
 		it('should return empty array if directory does not exist', async () => {
@@ -275,7 +275,7 @@ describe('DataPathManager', () => {
 
 			const backupPath = await manager.createBackup('source.json', 'custom-backup.json');
 
-			expect(backupPath).toBe('.obsidian/plugins/podcast-player/data/backups/custom-backup.json');
+			expect(backupPath).toBe('.obsidian/plugins/podcasts/data/backups/custom-backup.json');
 			expect(mockAdapter.write).toHaveBeenCalledWith(backupPath, sourceContent);
 		});
 

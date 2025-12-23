@@ -68,7 +68,7 @@ export function handleError(
 	// Show notice to user if requested
 	if (showNotice) {
 		const message = userMessage || getErrorMessage(error);
-		new Notice(`Podcast Player: ${message}`);
+		new Notice(`Podcasts: ${message}`);
 	}
 }
 

@@ -21,13 +21,13 @@ export class MiniPlayer {
     onload() {
         this.statusBarItem = this.plugin.addStatusBarItem();
         this.statusBarItem.addClass('podcast-mini-player');
-        
+
         // Hide initially until something is played or if state indicates no episode
         this.statusBarItem.addClass('is-hidden');
 
         this.render();
         this.registerEvents();
-        
+
         // Initial state check
         this.updateState();
     }
@@ -41,7 +41,7 @@ export class MiniPlayer {
         // Play/Pause Button
         this.playPauseBtn = container.createDiv({ cls: 'mini-player-btn' });
         setIcon(this.playPauseBtn, 'play');
-        
+
         this.playPauseBtn.addEventListener('click', (e) => {
             e.stopPropagation(); // Prevent triggering the status bar item click
             void this.togglePlayback();
@@ -53,16 +53,16 @@ export class MiniPlayer {
 
         // Add click handler to open player view
         this.statusBarItem.addEventListener('click', () => {
-             void this.plugin.activatePlayerView();
+            void this.plugin.activatePlayerView();
         });
-        
+
         // Add tooltip
-        this.statusBarItem.setAttribute('aria-label', 'Click to open Podcast Player');
+        this.statusBarItem.setAttribute('aria-label', 'Click to open Podcasts');
     }
 
     private registerEvents() {
         // We can access app.workspace directly
-         this.plugin.registerEvent(
+        this.plugin.registerEvent(
             (this.plugin.app.workspace as unknown as PodcastEvents).on('podcast:player-state-updated', () => {
                 this.updateState();
             })
@@ -84,7 +84,7 @@ export class MiniPlayer {
         if (currentEpisode) {
             this.statusBarItem.removeClass('is-hidden');
             this.titleEl.textContent = currentEpisode.title;
-            
+
             if (state.status === 'playing') {
                 setIcon(this.playPauseBtn, 'pause');
                 this.playPauseBtn.setAttribute('aria-label', 'Pause');

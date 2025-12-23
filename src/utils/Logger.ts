@@ -15,7 +15,7 @@ export enum LogLevel {
 export class Logger {
 	private static instance: Logger;
 	private logLevel: LogLevel = LogLevel.ERROR;
-	private readonly prefix = '[Podcast Player]';
+	private readonly prefix = '[Podcasts]';
 
 	private constructor() {
 		// Private constructor for singleton pattern

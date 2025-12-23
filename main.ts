@@ -28,6 +28,7 @@ import { NoteExporter } from './src/markdown';
 import { CleanupService } from './src/cleanup/CleanupService';
 import { BackupService } from './src/backup';
 import { logger } from './src/utils/Logger';
+import { DailyNoteService } from './src/utils/DailyNoteService';
 
 // Type-safe event registration helper for custom podcast events
 type PodcastEvents = Events & {
@@ -39,7 +40,7 @@ type PodcastEvents = Events & {
 };
 
 /**
- * Podcast Player Plugin for Obsidian
+ * Podcasts Plugin for Obsidian
  *
  * A feature-rich podcast player and manager that allows you to:
  * - Subscribe to and manage podcast feeds (RSS/Atom)
@@ -86,6 +87,9 @@ export default class PodcastPlayerPlugin extends Plugin {
 	// Backup layer
 	private backupService: BackupService;
 
+	// Daily note service
+	private dailyNoteService: DailyNoteService;
+
 	// UI layer
 	private miniPlayer: MiniPlayer;
 
@@ -93,7 +97,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 	 * Plugin lifecycle: Called when the plugin is loaded
 	 */
 	async onload() {
-		logger.info('Loading Podcast Player plugin');
+		logger.info('Loading Podcasts plugin');
 
 		// Initialize data path manager with default path using configDir
 		const defaultDataPath = `${this.app.vault.configDir}/${DEFAULT_SETTINGS.dataFolderPath}`;
@@ -181,6 +185,19 @@ export default class PodcastPlayerPlugin extends Plugin {
 			},
 			onEpisodeEnded: (episode) => {
 				void (async () => {
+					// Log to daily note
+					try {
+						const podcast = await this.subscriptionStore.getPodcast(episode.podcastId);
+						const podcastTitle = podcast?.title || 'Unknown Podcast';
+						await this.dailyNoteService.insertListeningLog(
+							podcastTitle,
+							episode.title,
+							episode.duration
+						);
+					} catch (error) {
+						logger.error('Failed to log to daily note', error);
+					}
+
 					// When an episode ends, try to play the next one from the queue
 					// and remove the played episode (queue behavior)
 					const currentQueue = await this.queueManager.getCurrentQueue();
@@ -313,6 +330,9 @@ export default class PodcastPlayerPlugin extends Plugin {
 		// Start automatic backup
 		this.backupService.start();
 
+		// Initialize daily note service
+		this.dailyNoteService = new DailyNoteService(this.app, this.settings);
+
 		// Register view types
 		try {
 			this.registerView(
@@ -349,7 +369,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 		this.miniPlayer.onload();
 
 		// Add ribbon icon for quick access - opens both left and right panels
-		this.addRibbonIcon('podcast', 'Podcast player', () => {
+		this.addRibbonIcon('podcast', 'Podcasts', () => {
 			void this.activateSidebarView(); // Left panel: Podcast management
 			void this.activatePlayerView(); // Right panel: Player controls
 		});
@@ -396,14 +416,14 @@ export default class PodcastPlayerPlugin extends Plugin {
 			}
 		});
 
-		logger.info('Podcast Player plugin loaded successfully');
+		logger.info('Podcasts plugin loaded successfully');
 	}
 
 	/**
 	 * Plugin lifecycle: Called when the plugin is unloaded
 	 */
 	onunload() {
-		logger.info('Unloading Podcast Player plugin');
+		logger.info('Unloading Podcasts plugin');
 
 		// Stop feed sync manager
 		if (this.feedSyncManager) {
@@ -625,6 +645,13 @@ export default class PodcastPlayerPlugin extends Plugin {
 	 */
 	getBackupService(): BackupService {
 		return this.backupService;
+	}
+
+	/**
+	 * Get the daily note service (for UI components)
+	 */
+	getDailyNoteService(): DailyNoteService {
+		return this.dailyNoteService;
 	}
 
 	/**

@@ -190,6 +190,8 @@ export interface PluginSettings {
 	dailyNoteFolderPath: string;
 	/** Daily note date format */
 	dailyNoteDateFormat: string;
+	/** Header to insert notes under */
+	dailyNoteHeader: string;
 }
 
 /**
@@ -197,7 +199,7 @@ export interface PluginSettings {
  * Note: dataFolderPath should be prefixed with vault.configDir at runtime
  */
 export const DEFAULT_SETTINGS: PluginSettings = {
-	dataFolderPath: 'plugins/podcast-player/data',
+	dataFolderPath: 'plugins/podcasts/data',
 	defaultPlaybackSettings: {
 		volume: 1.0,
 		playbackSpeed: 1.0,
@@ -211,6 +213,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	dailyNoteInsertPosition: 'bottom',
 	dailyNoteFolderPath: '',
 	dailyNoteDateFormat: 'YYYY-MM-DD',
+	dailyNoteHeader: '## 🎧 Listening Log',
 };
 
 /**

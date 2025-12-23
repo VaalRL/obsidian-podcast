@@ -89,7 +89,7 @@ export class PlayerView extends ItemView {
 	 * Get the display text for the view
 	 */
 	getDisplayText(): string {
-		return 'Podcast player';
+		return 'Podcasts';
 	}
 
 	/**

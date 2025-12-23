@@ -14,7 +14,7 @@ describe('ProgressStore', () => {
 
 	beforeEach(() => {
 		vault = new MockVault();
-		pathManager = new DataPathManager(vault as any, '.obsidian/plugins/podcast-player/data');
+		pathManager = new DataPathManager(vault as any, '.obsidian/plugins/podcasts/data');
 		progressStore = new ProgressStore(vault as any, pathManager);
 	});
 

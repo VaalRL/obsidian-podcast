@@ -14,7 +14,7 @@ describe('SettingsStore', () => {
 
 	beforeEach(() => {
 		vault = new MockVault();
-		pathManager = new DataPathManager(vault as any, '.obsidian/plugins/podcast-player/data');
+		pathManager = new DataPathManager(vault as any, '.obsidian/plugins/podcasts/data');
 		settingsStore = new SettingsStore(vault as any, pathManager);
 	});
 

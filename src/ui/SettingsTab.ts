@@ -91,7 +91,7 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 			.setName('Data folder path')
 			.setDesc('Folder where podcast data will be stored (relative to vault root)')
 			.addText(text => text
-				.setPlaceholder(this.settings.dataFolderPath || 'config/plugins/podcast-player/data')
+				.setPlaceholder(this.settings.dataFolderPath || 'config/plugins/podcasts/data')
 				.setValue(this.settings.dataFolderPath)
 				.onChange(async (value) => {
 					this.settings.dataFolderPath = value;
@@ -209,6 +209,18 @@ export class PodcastPlayerSettingTab extends PluginSettingTab {
 				.onChange((value) => {
 					this.settings.dailyNoteInsertPosition = value as 'top' | 'bottom' | 'cursor';
 					void this.saveSettings();
+				}));
+
+		// Daily note header
+		new Setting(containerEl)
+			.setName('Daily note header')
+			.setDesc('Header to insert notes under (e.g. ## 🎧 Listening Log)')
+			.addText(text => text
+				.setPlaceholder('## 🎧 Listening Log')
+				.setValue(this.settings.dailyNoteHeader)
+				.onChange(async (value) => {
+					this.settings.dailyNoteHeader = value;
+					await this.saveSettings();
 				}));
 	}
 

@@ -141,6 +141,38 @@ describe('QueueManager', () => {
 			}));
 		});
 
+		it('should not add duplicate episode', async () => {
+			const testQueue: Queue = {
+				id: 'queue-123',
+				name: 'Test Queue',
+				episodeIds: ['ep-existing'],
+				currentIndex: 0,
+				autoPlayNext: true,
+				shuffle: false,
+				repeat: 'none',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+
+			mockQueueStore.getQueue.mockResolvedValue({ ...testQueue });
+
+			await queueManager.addEpisode('queue-123', 'ep-existing');
+
+			// Should not have saved any changes (or saved with same list)
+			// But since we want to be explicit, let's verify episodeIds didn't change
+
+			// Note: In strict implementation checking saveQueue call might depend on implementation details
+			// If we return early, saveQueue might not be called.
+			// Let's assume we want it to NOT change the list.
+
+			// Ideally we mock getQueue to return a reference we can check, 
+			// but here let's check what saveQueue was called with IF it was called, 
+			// or rely on the implementation returning early.
+
+			// If implementation returns early:
+			expect(mockQueueStore.saveQueue).not.toHaveBeenCalled();
+		});
+
 		it('should throw error if queue does not exist', async () => {
 			mockQueueStore.getQueue.mockResolvedValue(null);
 
@@ -168,6 +200,28 @@ describe('QueueManager', () => {
 
 			expect(mockQueueStore.saveQueue).toHaveBeenCalledWith(expect.objectContaining({
 				episodeIds: ['ep1', 'ep2', 'ep3'],
+			}));
+		});
+
+		it('should filter out duplicate episodes', async () => {
+			const testQueue: Queue = {
+				id: 'queue-123',
+				name: 'Test Queue',
+				episodeIds: ['ep1'],
+				currentIndex: 0,
+				autoPlayNext: true,
+				shuffle: false,
+				repeat: 'none',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+
+			mockQueueStore.getQueue.mockResolvedValue({ ...testQueue });
+
+			await queueManager.addEpisodes('queue-123', ['ep1', 'ep2']);
+
+			expect(mockQueueStore.saveQueue).toHaveBeenCalledWith(expect.objectContaining({
+				episodeIds: ['ep1', 'ep2'],
 			}));
 		});
 	});
@@ -538,6 +592,80 @@ describe('QueueManager', () => {
 			const hasNext = await queueManager.hasNext('queue-123');
 
 			expect(hasNext).toBe(true);
+		});
+	});
+
+
+	describe('insertEpisode', () => {
+		it('should insert episode at index', async () => {
+			const testQueue: Queue = {
+				id: 'queue-123',
+				name: 'Test Queue',
+				episodeIds: ['ep1', 'ep3'],
+				currentIndex: 0,
+				autoPlayNext: true,
+				shuffle: false,
+				repeat: 'none',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+
+			mockQueueStore.getQueue.mockResolvedValue({ ...testQueue });
+
+			await queueManager.insertEpisode('queue-123', 'ep2', 1);
+
+			expect(mockQueueStore.saveQueue).toHaveBeenCalledWith(expect.objectContaining({
+				episodeIds: ['ep1', 'ep2', 'ep3'],
+			}));
+		});
+
+		it('should move existing episode to new position instead of duplicating', async () => {
+			const testQueue: Queue = {
+				id: 'queue-123',
+				name: 'Test Queue',
+				episodeIds: ['ep1', 'ep2', 'ep3'],
+				currentIndex: 0,
+				autoPlayNext: true,
+				shuffle: false,
+				repeat: 'none',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+
+			mockQueueStore.getQueue.mockResolvedValue({ ...testQueue });
+
+			// Move ep3 to position 0
+			await queueManager.insertEpisode('queue-123', 'ep3', 0);
+
+			expect(mockQueueStore.saveQueue).toHaveBeenCalledWith(expect.objectContaining({
+				episodeIds: ['ep3', 'ep1', 'ep2'],
+			}));
+		});
+
+		it('should handle index adjustment when moving episode forward', async () => {
+			const testQueue: Queue = {
+				id: 'queue-123',
+				name: 'Test Queue',
+				episodeIds: ['ep1', 'ep2', 'ep3'],
+				currentIndex: 0,
+				autoPlayNext: true,
+				shuffle: false,
+				repeat: 'none',
+				createdAt: new Date(),
+				updatedAt: new Date(),
+			};
+
+			mockQueueStore.getQueue.mockResolvedValue({ ...testQueue });
+
+			// Move ep1 to position 2 (after ep3)
+			// Initially: [ep1, ep2, ep3]
+			// Remove ep1: [ep2, ep3]
+			// Insert ep1 at 2: [ep2, ep3, ep1]
+			await queueManager.insertEpisode('queue-123', 'ep1', 2);
+
+			expect(mockQueueStore.saveQueue).toHaveBeenCalledWith(expect.objectContaining({
+				episodeIds: ['ep2', 'ep3', 'ep1'],
+			}));
 		});
 	});
 });

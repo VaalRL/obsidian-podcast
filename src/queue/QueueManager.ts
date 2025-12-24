@@ -157,6 +157,13 @@ export class QueueManager {
 			throw new Error(`Queue not found: ${queueId}`);
 		}
 
+		// Check for duplicates
+		if (queue.episodeIds.includes(episodeId)) {
+			logger.info('Episode already in queue, skipping add', episodeId);
+			logger.methodExit('QueueManager', 'addEpisode', 'duplicate');
+			return;
+		}
+
 		queue.episodeIds.push(episodeId);
 		queue.updatedAt = new Date();
 
@@ -183,12 +190,21 @@ export class QueueManager {
 			throw new Error(`Queue not found: ${queueId}`);
 		}
 
-		queue.episodeIds.push(...episodeIds);
+		// Filter out episodes already in queue
+		const newEpisodeIds = episodeIds.filter(id => !queue.episodeIds.includes(id));
+
+		if (newEpisodeIds.length === 0) {
+			logger.info('All episodes already in queue, skipping');
+			logger.methodExit('QueueManager', 'addEpisodes', 'all duplicates');
+			return;
+		}
+
+		queue.episodeIds.push(...newEpisodeIds);
 		queue.updatedAt = new Date();
 
 		await this.queueStore.saveQueue(queue);
 
-		logger.info(`Added ${episodeIds.length} episodes to queue`);
+		logger.info(`Added ${newEpisodeIds.length} episodes to queue`);
 
 		if (this.app) {
 			this.app.workspace.trigger('podcast:queue-updated', queueId);
@@ -207,6 +223,13 @@ export class QueueManager {
 
 		if (!queue) {
 			throw new Error(`Queue not found: ${queueId}`);
+		}
+
+		// Check if episode already exists in queue
+		const existingIndex = queue.episodeIds.indexOf(episodeId);
+		if (existingIndex !== -1) {
+			// Remove from old position first
+			queue.episodeIds.splice(existingIndex, 1);
 		}
 
 		const clampedIndex = Math.max(0, Math.min(index, queue.episodeIds.length));

@@ -1,4 +1,4 @@
-import { setIcon, Events, Menu } from 'obsidian';
+import { setIcon, Events, Platform } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { logger } from '../utils/Logger';
 
@@ -10,15 +10,23 @@ type PodcastEvents = Events & {
 
 export class MiniPlayer {
     private plugin: PodcastPlayerPlugin;
-    private statusBarItem: HTMLElement;
+    private statusBarItem: HTMLElement | null = null;
     private playPauseBtn: HTMLElement;
     private titleEl: HTMLElement;
+    private isMobile: boolean;
 
     constructor(plugin: PodcastPlayerPlugin) {
         this.plugin = plugin;
+        this.isMobile = Platform.isMobile;
     }
 
     onload() {
+        // Skip status bar on mobile as it has limited support
+        if (this.isMobile) {
+            logger.info('MiniPlayer: Skipping status bar on mobile platform');
+            return;
+        }
+
         this.statusBarItem = this.plugin.addStatusBarItem();
         this.statusBarItem.addClass('podcast-mini-player');
 
@@ -33,6 +41,7 @@ export class MiniPlayer {
     }
 
     private render() {
+        if (!this.statusBarItem) return;
         this.statusBarItem.empty();
 
         // Container
@@ -61,6 +70,9 @@ export class MiniPlayer {
     }
 
     private registerEvents() {
+        // Skip event registration on mobile if no status bar
+        if (this.isMobile || !this.statusBarItem) return;
+
         // We can access app.workspace directly
         this.plugin.registerEvent(
             (this.plugin.app.workspace as unknown as PodcastEvents).on('podcast:player-state-updated', () => {
@@ -76,7 +88,7 @@ export class MiniPlayer {
     }
 
     private updateState() {
-        if (!this.plugin.playerController) return;
+        if (!this.plugin.playerController || !this.statusBarItem) return;
 
         const state = this.plugin.playerController.getState();
         const currentEpisode = state.currentEpisode;

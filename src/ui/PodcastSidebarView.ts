@@ -145,7 +145,24 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Render the sidebar view
 	 */
+	private renderLoading(container: HTMLElement): void {
+		const spinnerContainer = container.createDiv({ cls: 'podcast-spinner-container' });
+		spinnerContainer.createDiv({ cls: 'podcast-spinner' });
+	}
+
+	private renderAbortController: AbortController | null = null;
+
+	/**
+	 * Render the sidebar view
+	 */
 	private async render(): Promise<void> {
+		// Cancel previous render operation
+		if (this.renderAbortController) {
+			this.renderAbortController.abort();
+		}
+		this.renderAbortController = new AbortController();
+		const signal = this.renderAbortController.signal;
+
 		this.sidebarContentEl.empty();
 
 		// Header with actions
@@ -154,22 +171,27 @@ export class PodcastSidebarView extends ItemView {
 		// Search box (includes sort button)
 		this.renderSearchBox();
 
-		// Render content based on current view
-		if (this.selectedPodcast) {
-			this.renderEpisodeList();
-		} else if (this.selectedPlaylist) {
-			await this.renderPlaylistDetails();
-		} else if (this.selectedQueue) {
-			await this.renderQueueDetails();
-		} else if (this.viewMode === 'podcasts') {
-			// Check feeds view mode
-			if (this.feedsViewMode === 'episodes') {
-				await this.renderAllEpisodes();
+		try {
+			// Render content based on current view
+			if (this.selectedPodcast) {
+				await this.renderEpisodeList(signal);
+			} else if (this.selectedPlaylist) {
+				await this.renderPlaylistDetails(signal);
+			} else if (this.selectedQueue) {
+				await this.renderQueueDetails(signal);
+			} else if (this.viewMode === 'podcasts') {
+				// Check feeds view mode
+				if (this.feedsViewMode === 'episodes') {
+					await this.renderAllEpisodes(signal);
+				} else {
+					await this.renderPodcastList(signal);
+				}
 			} else {
-				await this.renderPodcastList();
+				await this.renderPlaylistList(signal);
 			}
-		} else {
-			await this.renderPlaylistList();
+		} catch (error) {
+			if (signal.aborted) return;
+			logger.error('Render failed', error);
 		}
 	}
 
@@ -473,8 +495,9 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Render the list of podcasts
 	 */
-	private async renderPodcastList(): Promise<void> {
+	private async renderPodcastList(signal?: AbortSignal): Promise<void> {
 		const listContainer = this.sidebarContentEl.createDiv({ cls: 'podcast-list-container' });
+		this.renderLoading(listContainer);
 
 		// Load podcasts from store
 		let podcasts = await this.loadPodcasts();
@@ -508,8 +531,12 @@ export class PodcastSidebarView extends ItemView {
 			return;
 		}
 
+		// Clear loading spinner
+		listContainer.empty();
+
 		// Render each podcast
 		for (const podcast of podcasts) {
+			if (signal?.aborted) return;
 			this.renderPodcastItem(listContainer, podcast);
 		}
 	}
@@ -517,8 +544,9 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Render all episodes from all podcasts in a single list
 	 */
-	private async renderAllEpisodes(): Promise<void> {
+	private async renderAllEpisodes(signal?: AbortSignal): Promise<void> {
 		const listContainer = this.sidebarContentEl.createDiv({ cls: 'episode-list-container' });
+		this.renderLoading(listContainer);
 
 		// Gather all episodes from all podcasts
 		const subscriptionStore = this.plugin.getSubscriptionStore();
@@ -560,8 +588,12 @@ export class PodcastSidebarView extends ItemView {
 			return;
 		}
 
+		// Clear loading spinner
+		listContainer.empty();
+
 		// Render each episode with podcast info
 		for (const episode of allEpisodes) {
+			if (signal?.aborted) return;
 			const podcast = podcastMap.get(episode.podcastId);
 			this.renderAllEpisodesItem(listContainer, episode, podcast);
 		}
@@ -700,12 +732,16 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Render the list of episodes for the selected podcast
 	 */
-	private renderEpisodeList(): void {
+	private async renderEpisodeList(signal?: AbortSignal): Promise<void> {
 		if (!this.selectedPodcast) return;
 
 		const listContainer = this.sidebarContentEl.createDiv({ cls: 'episode-list-container' });
+		this.renderLoading(listContainer);
 
-		let episodes = this.selectedPodcast.episodes || [];
+		// Fetch the latest podcast data to ensure episodes are up-to-date
+		const subscriptionStore = this.plugin.getSubscriptionStore();
+		const podcast = await subscriptionStore.getPodcast(this.selectedPodcast.id);
+		let episodes = podcast?.episodes || [];
 
 		// Filter episodes based on search query
 		if (this.searchQuery) {
@@ -733,8 +769,12 @@ export class PodcastSidebarView extends ItemView {
 			return;
 		}
 
+		// Clear loading spinner
+		listContainer.empty();
+
 		// Render each episode
 		for (const episode of episodes) {
+			if (signal?.aborted) return;
 			this.renderEpisodeItem(listContainer, episode);
 		}
 	}
@@ -1285,14 +1325,38 @@ export class PodcastSidebarView extends ItemView {
 	}
 
 	/**
-	 * Load statistics for podcasts
+	 * Load statistics for podcasts (parallel loading for performance)
+	 * Uses error handling per podcast - partial failures won't prevent
+	 * other podcasts from loading their stats.
 	 */
 	private async loadPodcastStats(podcasts: Podcast[]): Promise<void> {
 		const episodeManager = this.plugin.getEpisodeManager();
-		for (const podcast of podcasts) {
-			if (!this.podcastStats.has(podcast.id)) {
+
+		// Filter podcasts that need stats loading
+		const podcastsToLoad = podcasts.filter(p => !this.podcastStats.has(p.id));
+
+		if (podcastsToLoad.length === 0) {
+			return;
+		}
+
+		// Load stats in parallel with individual error handling
+		const statsPromises = podcastsToLoad.map(async (podcast) => {
+			try {
 				const stats = await episodeManager.getPodcastStatistics(podcast.id);
-				this.podcastStats.set(podcast.id, stats);
+				return { podcastId: podcast.id, stats, error: null };
+			} catch (error) {
+				logger.error(`Failed to load stats for podcast ${podcast.id}`, error);
+				return { podcastId: podcast.id, stats: null, error };
+			}
+		});
+
+		// Wait for all stats to complete
+		const results = await Promise.all(statsPromises);
+
+		// Update the cache with successful results only
+		for (const result of results) {
+			if (result.stats) {
+				this.podcastStats.set(result.podcastId, result.stats);
 			}
 		}
 	}
@@ -1435,19 +1499,24 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Render the list of playlists
 	 */
-	private async renderPlaylistList(): Promise<void> {
+	private async renderPlaylistList(signal?: AbortSignal): Promise<void> {
 		const listContainer = this.sidebarContentEl.createDiv({ cls: 'playlist-list-container' });
+		this.renderLoading(listContainer);
+
+		// Clear loading spinner
+		listContainer.empty();
 
 		// Get default queue first
 		const queueManager = this.plugin.getQueueManager();
 		const allQueues = await queueManager.getAllQueues();
 
-		// Render default queue section if there are queues
-		if (allQueues.length > 0 && !this.searchQuery) {
+		// Queues Section
+		if (allQueues.length > 0) {
 			const queueSection = listContainer.createDiv({ cls: 'queue-section-sidebar' });
 			queueSection.createEl('h4', { text: 'Queues', cls: 'section-title' });
 
 			for (const queue of allQueues) {
+				if (signal?.aborted) return;
 				this.renderQueueAsPlaylistItem(queueSection, queue);
 			}
 		}
@@ -1487,6 +1556,7 @@ export class PodcastSidebarView extends ItemView {
 				}
 			} else {
 				for (const playlist of playlists) {
+					if (signal?.aborted) return;
 					this.renderPlaylistItem(playlistSection, playlist);
 				}
 			}
@@ -1760,29 +1830,44 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Render playlist details (episodes)
 	 */
-	private async renderPlaylistDetails(): Promise<void> {
+	private async renderPlaylistDetails(signal?: AbortSignal): Promise<void> {
 		if (!this.selectedPlaylist) return;
 
 		const detailsContainer = this.sidebarContentEl.createDiv({ cls: 'playlist-details-container' });
+
+		// Calculate total duration
+		let totalDuration = 0;
+		const episodeManager = this.plugin.getEpisodeManager();
+		// We fetch episodes here just for stats. The list rendering will fetch them again or use cache.
+		// Since we have an ID list, we can use getEpisodesWithProgress (batch)
+		try {
+			const episodes = await episodeManager.getEpisodesWithProgress(this.selectedPlaylist.episodeIds);
+			totalDuration = episodes.reduce((sum, e) => sum + (e.duration || 0), 0);
+		} catch (error) {
+			logger.error('Failed to calculate playlist duration', error);
+		}
 
 		// Metadata section
 		const metadata = detailsContainer.createDiv({ cls: 'playlist-details-metadata' });
 		if (this.selectedPlaylist.description) {
 			metadata.createEl('p', { text: this.selectedPlaylist.description, cls: 'playlist-details-description' });
 		}
+
+		const durationText = totalDuration > 0 ? ` • ${this.formatDuration(totalDuration)}` : '';
+
 		metadata.createEl('p', {
-			text: `${this.selectedPlaylist.episodeIds.length} episodes • Created ${this.formatDate(this.selectedPlaylist.createdAt)}`,
+			text: `${this.selectedPlaylist.episodeIds.length} episodes${durationText} • Created ${this.formatDate(this.selectedPlaylist.createdAt)}`,
 			cls: 'playlist-details-info'
 		});
 
 		// Episodes list
-		await this.renderPlaylistEpisodeList(detailsContainer, this.selectedPlaylist.episodeIds);
+		await this.renderPlaylistEpisodeList(detailsContainer, this.selectedPlaylist.episodeIds, signal);
 	}
 
 	/**
 	 * Render episode list for playlist
 	 */
-	private async renderPlaylistEpisodeList(container: HTMLElement, episodeIds: string[]): Promise<void> {
+	private async renderPlaylistEpisodeList(container: HTMLElement, episodeIds: string[], signal?: AbortSignal): Promise<void> {
 		if (episodeIds.length === 0) {
 			const empty = container.createDiv({ cls: 'empty-state' });
 			empty.createEl('p', { text: 'No episodes in this playlist' });
@@ -1791,8 +1876,22 @@ export class PodcastSidebarView extends ItemView {
 
 		const episodeManager = this.plugin.getEpisodeManager();
 		const listContainer = container.createDiv({ cls: 'playlist-episode-list' });
+		this.renderLoading(listContainer);
+
+		// Clear loading spinner if we are about to add items
+		if (episodeIds.length > 0) {
+			listContainer.empty();
+		} else {
+			// If empty, we need to clear spinner and show empty state
+			listContainer.empty(); // Actually handled by outer check but safe to be sure
+			// Logic above already handled empty state, but renderEpisodeList is called after empty check.
+			// Let's just empty it.
+		}
+
+		listContainer.empty();
 
 		for (let i = 0; i < episodeIds.length; i++) {
+			if (signal?.aborted) return;
 			const episodeId = episodeIds[i];
 			try {
 				const episodeWithProgress = await episodeManager.getEpisodeWithProgress(episodeId);
@@ -2224,7 +2323,7 @@ export class PodcastSidebarView extends ItemView {
 	/**
 	 * Render queue details (episodes)
 	 */
-	private async renderQueueDetails(): Promise<void> {
+	private async renderQueueDetails(signal?: AbortSignal): Promise<void> {
 		if (!this.selectedQueue) return;
 
 		const detailsContainer = this.sidebarContentEl.createDiv({ cls: 'playlist-details-container' });
@@ -2232,10 +2331,22 @@ export class PodcastSidebarView extends ItemView {
 		// Header section with metadata and play button
 		const header = detailsContainer.createDiv({ cls: 'playlist-details-header podcast-sidebar-header-flex' });
 
+		// Calculate total duration
+		let totalDuration = 0;
+		const episodeManager = this.plugin.getEpisodeManager();
+		try {
+			const episodes = await episodeManager.getEpisodesWithProgress(this.selectedQueue.episodeIds);
+			totalDuration = episodes.reduce((sum, e) => sum + (e.duration || 0), 0);
+		} catch (error) {
+			logger.error('Failed to calculate queue duration', error);
+		}
+
 		// Metadata section
 		const metadata = header.createDiv({ cls: 'playlist-details-metadata' });
+		const durationText = totalDuration > 0 ? ` • ${this.formatDuration(totalDuration)}` : '';
+
 		metadata.createEl('p', {
-			text: `${this.selectedQueue.episodeIds.length} episodes`,
+			text: `${this.selectedQueue.episodeIds.length} episodes${durationText}`,
 			cls: 'playlist-details-count'
 		});
 
@@ -2261,10 +2372,11 @@ export class PodcastSidebarView extends ItemView {
 		}
 
 		// Load episodes
-		const episodeManager = this.plugin.getEpisodeManager();
+		// episodeManager is already declared above
 		const episodes: Episode[] = [];
 
 		for (const episodeId of this.selectedQueue.episodeIds) {
+			if (signal?.aborted) return;
 			const episode = await episodeManager.getEpisodeWithProgress(episodeId);
 			if (episode) {
 				episodes.push(episode);
@@ -2273,6 +2385,7 @@ export class PodcastSidebarView extends ItemView {
 
 		// Render episodes
 		episodes.forEach((episode, index) => {
+			if (signal?.aborted) return;
 			this.renderQueueEpisodeItem(listContainer, episode, index);
 		});
 	}

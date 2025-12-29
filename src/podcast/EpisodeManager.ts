@@ -117,17 +117,43 @@ export class EpisodeManager {
 	}
 
 	/**
-	 * Get episodes with progress information
+	 * Get episodes with progress information (batch optimized)
+	 * Uses batch progress lookup to avoid N+1 queries
 	 */
 	async getEpisodesWithProgress(episodeIds: string[]): Promise<EpisodeWithProgress[]> {
 		logger.methodEntry('EpisodeManager', 'getEpisodesWithProgress', `count=${episodeIds.length}`);
 
-		const episodes: EpisodeWithProgress[] = [];
+		if (episodeIds.length === 0) {
+			logger.methodExit('EpisodeManager', 'getEpisodesWithProgress', 'empty');
+			return [];
+		}
 
+		// Get all podcasts and build episode map
+		const podcasts = await this.subscriptionStore.getAllPodcasts();
+		const episodeMap = new Map<string, Episode>();
+
+		for (const podcast of podcasts) {
+			if (podcast.episodes) {
+				for (const episode of podcast.episodes) {
+					episodeMap.set(episode.id, episode);
+				}
+			}
+		}
+
+		// Batch get progress data (single query instead of N queries)
+		const progressMap = await this.progressStore.getBatchProgress(episodeIds);
+		const percentageMap = await this.progressStore.getBatchCompletionPercentages(episodeIds);
+
+		// Build result array
+		const episodes: EpisodeWithProgress[] = [];
 		for (const episodeId of episodeIds) {
-			const episode = await this.getEpisodeWithProgress(episodeId);
+			const episode = episodeMap.get(episodeId);
 			if (episode) {
-				episodes.push(episode);
+				episodes.push({
+					...episode,
+					progress: progressMap.get(episodeId) || undefined,
+					completionPercentage: percentageMap.get(episodeId) || 0,
+				});
 			}
 		}
 
@@ -136,32 +162,31 @@ export class EpisodeManager {
 	}
 
 	/**
-	 * Get all episodes for a podcast with progress
+	 * Get all episodes for a podcast with progress (batch optimized)
 	 */
 	async getPodcastEpisodesWithProgress(podcastId: string): Promise<EpisodeWithProgress[]> {
 		logger.methodEntry('EpisodeManager', 'getPodcastEpisodesWithProgress', podcastId);
 
 		const podcast = await this.subscriptionStore.getPodcast(podcastId);
 
-		if (!podcast || !podcast.episodes) {
+		if (!podcast || !podcast.episodes || podcast.episodes.length === 0) {
 			logger.methodExit('EpisodeManager', 'getPodcastEpisodesWithProgress', 'not found');
 			return [];
 		}
 
-		const episodes: EpisodeWithProgress[] = [];
+		// Batch get all episode IDs
+		const episodeIds = podcast.episodes.map(e => e.id);
 
-		for (const episode of podcast.episodes) {
-			const progress = await this.progressStore.getProgress(episode.id);
-			const completionPercentage = progress
-				? await this.progressStore.getCompletionPercentage(episode.id)
-				: 0;
+		// Single batch query instead of N queries
+		const progressMap = await this.progressStore.getBatchProgress(episodeIds);
+		const percentageMap = await this.progressStore.getBatchCompletionPercentages(episodeIds);
 
-			episodes.push({
-				...episode,
-				progress: progress || undefined,
-				completionPercentage,
-			});
-		}
+		// Build result array
+		const episodes: EpisodeWithProgress[] = podcast.episodes.map(episode => ({
+			...episode,
+			progress: progressMap.get(episode.id) || undefined,
+			completionPercentage: percentageMap.get(episode.id) || 0,
+		}));
 
 		logger.methodExit('EpisodeManager', 'getPodcastEpisodesWithProgress');
 		return episodes;
@@ -394,30 +419,37 @@ export class EpisodeManager {
 	}
 
 	/**
-	 * Get all episodes with progress across all podcasts
+	 * Get all episodes with progress across all podcasts (batch optimized)
 	 */
 	async getAllEpisodesWithProgress(): Promise<EpisodeWithProgress[]> {
 		logger.methodEntry('EpisodeManager', 'getAllEpisodesWithProgress');
 
 		const podcasts = await this.subscriptionStore.getAllPodcasts();
-		const allEpisodes: EpisodeWithProgress[] = [];
 
+		// Collect all episodes first
+		const allEpisodesList: Episode[] = [];
 		for (const podcast of podcasts) {
 			if (podcast.episodes) {
-				for (const episode of podcast.episodes) {
-					const progress = await this.progressStore.getProgress(episode.id);
-					const completionPercentage = progress
-						? await this.progressStore.getCompletionPercentage(episode.id)
-						: 0;
-
-					allEpisodes.push({
-						...episode,
-						progress: progress || undefined,
-						completionPercentage,
-					});
-				}
+				allEpisodesList.push(...podcast.episodes);
 			}
 		}
+
+		if (allEpisodesList.length === 0) {
+			logger.methodExit('EpisodeManager', 'getAllEpisodesWithProgress', 'empty');
+			return [];
+		}
+
+		// Single batch query for all progress data
+		const episodeIds = allEpisodesList.map(e => e.id);
+		const progressMap = await this.progressStore.getBatchProgress(episodeIds);
+		const percentageMap = await this.progressStore.getBatchCompletionPercentages(episodeIds);
+
+		// Build result array
+		const allEpisodes: EpisodeWithProgress[] = allEpisodesList.map(episode => ({
+			...episode,
+			progress: progressMap.get(episode.id) || undefined,
+			completionPercentage: percentageMap.get(episode.id) || 0,
+		}));
 
 		logger.methodExit('EpisodeManager', 'getAllEpisodesWithProgress');
 		return allEpisodes;

@@ -153,10 +153,35 @@ export abstract class FileSystemStore<T> {
 }
 
 /**
- * Single-file store - Stores all data in a single JSON file
+ * SingleFileStore - Stores all data in a single JSON file with caching.
+ *
+ * CACHE BEHAVIOR:
+ * - Reads are cached for up to 2 seconds (configurable via CACHE_TTL_MS)
+ * - Writes are debounced by default (1 second delay) to reduce I/O
+ * - Cache does NOT auto-invalidate on external file changes
+ *
+ * USAGE GUIDELINES:
+ * - Call flush() before app shutdown to ensure pending writes are saved
+ * - Call invalidateCache() after detecting external changes
+ * - Use immediate=true for critical saves (e.g., progress on pause)
+ *
+ * LIMITATIONS:
+ * - Not suitable for multi-process scenarios without external coordination
+ * - May return stale data if file synced externally within TTL window
  */
 export abstract class SingleFileStore<T> extends FileSystemStore<T> {
 	protected filePath: string;
+
+	// Performance optimization: in-memory cache
+	private cache: T | null = null;
+	private cacheTimestamp: number = 0;
+	private readonly CACHE_TTL_MS = 2000; // 2 seconds cache TTL (balance between freshness and performance)
+	private isDirty: boolean = false;
+	private saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+	private readonly SAVE_DEBOUNCE_MS = 1000; // Debounce saves by 1 second
+
+	// Concurrent load deduplication
+	private loadPromise: Promise<T> | null = null;
 
 	constructor(
 		vault: Vault,
@@ -169,11 +194,39 @@ export abstract class SingleFileStore<T> extends FileSystemStore<T> {
 	}
 
 	/**
-	 * Load data from the file
+	 * Load data from the file (with caching and concurrent load deduplication)
 	 */
 	async load(): Promise<T> {
 		logger.methodEntry('SingleFileStore', 'load', this.filePath);
 
+		// Deduplicate concurrent load requests
+		if (this.loadPromise) {
+			logger.debug('Returning existing load promise', this.filePath);
+			return this.loadPromise;
+		}
+
+		// Return cached data if still valid
+		const now = Date.now();
+		if (this.cache !== null && (now - this.cacheTimestamp) < this.CACHE_TTL_MS) {
+			logger.debug('Returning cached data', this.filePath);
+			logger.methodExit('SingleFileStore', 'load', 'cached');
+			return this.cache;
+		}
+
+		// Create a promise for this load operation to deduplicate concurrent requests
+		this.loadPromise = this.performLoad(now);
+
+		try {
+			return await this.loadPromise;
+		} finally {
+			this.loadPromise = null;
+		}
+	}
+
+	/**
+	 * Internal method to perform the actual load
+	 */
+	private async performLoad(timestamp: number): Promise<T> {
 		const data = await this.readJson<T>(this.filePath, this.getDefaultValue());
 
 		if (!this.validate(data)) {
@@ -181,22 +234,101 @@ export abstract class SingleFileStore<T> extends FileSystemStore<T> {
 			return this.getDefaultValue();
 		}
 
+		// Update cache
+		this.cache = data;
+		this.cacheTimestamp = timestamp;
+
 		logger.methodExit('SingleFileStore', 'load');
 		return data;
 	}
 
 	/**
-	 * Save data to the file
+	 * Save data to the file.
+	 * By default, writes are debounced for performance.
+	 * Use immediate=true for critical saves that must persist immediately.
+	 *
+	 * @param data - The data to save
+	 * @param immediate - If true, write to disk immediately; otherwise debounce
 	 */
-	async save(data: T): Promise<void> {
+	async save(data: T, immediate: boolean = false): Promise<void> {
 		logger.methodEntry('SingleFileStore', 'save', this.filePath);
 
 		if (!this.validate(data)) {
 			throw new StorageError('Data validation failed', this.filePath);
 		}
 
-		await this.writeJson(this.filePath, data);
+		// Update cache immediately (memory is always up-to-date)
+		this.cache = data;
+		this.cacheTimestamp = Date.now();
+		this.isDirty = true;
+
+		if (immediate) {
+			// Critical save: write to disk immediately
+			await this.flush();
+		} else {
+			// Normal save: debounce the file write
+			this.scheduleDebouncedSave();
+		}
+
 		logger.methodExit('SingleFileStore', 'save');
+	}
+
+	/**
+	 * Schedule a debounced save operation
+	 */
+	private scheduleDebouncedSave(): void {
+		if (this.saveDebounceTimer) {
+			clearTimeout(this.saveDebounceTimer);
+		}
+
+		this.saveDebounceTimer = setTimeout(async () => {
+			this.saveDebounceTimer = null;
+			if (this.isDirty && this.cache) {
+				try {
+					await this.writeJson(this.filePath, this.cache);
+					this.isDirty = false;
+					logger.debug('Debounced save completed', this.filePath);
+				} catch (error) {
+					logger.error('Debounced save failed', error);
+				}
+			}
+		}, this.SAVE_DEBOUNCE_MS);
+	}
+
+	/**
+	 * Force flush any pending saves to disk immediately.
+	 * Call this before app shutdown or when you need to ensure data is persisted.
+	 */
+	async flush(): Promise<void> {
+		// Clear any pending debounce timer
+		if (this.saveDebounceTimer) {
+			clearTimeout(this.saveDebounceTimer);
+			this.saveDebounceTimer = null;
+		}
+
+		// Write to disk if there are pending changes
+		if (this.isDirty && this.cache) {
+			await this.writeJson(this.filePath, this.cache);
+			this.isDirty = false;
+			logger.debug('Flushed pending save', this.filePath);
+		}
+	}
+
+	/**
+	 * Invalidate the cache, forcing the next load() to read from disk.
+	 * Call this when you detect external file changes.
+	 */
+	invalidateCache(): void {
+		this.cache = null;
+		this.cacheTimestamp = 0;
+		logger.debug('Cache invalidated', this.filePath);
+	}
+
+	/**
+	 * Check if there are unsaved changes
+	 */
+	hasPendingChanges(): boolean {
+		return this.isDirty;
 	}
 
 	/**
@@ -206,7 +338,8 @@ export abstract class SingleFileStore<T> extends FileSystemStore<T> {
 		logger.methodEntry('SingleFileStore', 'clear', this.filePath);
 
 		const defaultValue = this.getDefaultValue();
-		await this.save(defaultValue);
+		await this.save(defaultValue, true); // Use immediate save
+		this.invalidateCache();
 
 		logger.methodExit('SingleFileStore', 'clear');
 	}
@@ -215,9 +348,17 @@ export abstract class SingleFileStore<T> extends FileSystemStore<T> {
 	 * Delete the file
 	 */
 	async delete(): Promise<void> {
+		// Clear any pending saves first
+		if (this.saveDebounceTimer) {
+			clearTimeout(this.saveDebounceTimer);
+			this.saveDebounceTimer = null;
+		}
+		this.isDirty = false;
+
 		if (await this.fileExists(this.filePath)) {
 			await this.deleteFile(this.filePath);
 		}
+		this.invalidateCache();
 	}
 }
 

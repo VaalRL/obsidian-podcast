@@ -5,7 +5,7 @@
  * Displays current episode, playback controls, and progress.
  */
 
-import { ItemView, WorkspaceLeaf, setIcon, Notice, Events } from 'obsidian';
+import { ItemView, WorkspaceLeaf, setIcon, Notice, Events, Platform } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Queue, Playlist } from '../model';
 import type { EpisodeWithProgress } from '../podcast';
@@ -276,9 +276,17 @@ export class PlayerView extends ItemView {
 		const tooltip = progressBarContainer.createDiv({ cls: 'progress-tooltip' });
 		tooltip.textContent = '0:00';
 
-		// Make progress bar draggable and clickable
-		progressBarContainer.addEventListener('mousedown', (e) => {
-			e.preventDefault(); // Prevent text selection
+		// Helper function to get X coordinate from mouse or touch event
+		const getClientX = (e: MouseEvent | TouchEvent): number => {
+			if ('touches' in e) {
+				return e.touches[0]?.clientX ?? e.changedTouches[0]?.clientX ?? 0;
+			}
+			return e.clientX;
+		};
+
+		// Unified handler for both mouse and touch interactions
+		const handleProgressInteraction = (startEvent: MouseEvent | TouchEvent) => {
+			startEvent.preventDefault(); // Prevent text selection / scrolling
 			progressBarContainer.focus(); // Ensure focus for keyboard controls
 
 			const playerController = this.plugin.playerController;
@@ -288,9 +296,9 @@ export class PlayerView extends ItemView {
 			this.isDraggingProgress = true;
 			const duration = state.currentEpisode.duration;
 
-			const updateUI = (evt: MouseEvent) => {
+			const updateUI = (clientX: number): number => {
 				const rect = progressBarContainer.getBoundingClientRect();
-				const clickX = evt.clientX - rect.left;
+				const clickX = clientX - rect.left;
 				const percentage = Math.max(0, Math.min(1, clickX / rect.width));
 
 				// Update UI
@@ -305,27 +313,43 @@ export class PlayerView extends ItemView {
 				return percentage;
 			};
 
-			// Initial update on mousedown
-			let finalPercentage = updateUI(e);
+			// Initial update
+			let finalPercentage = updateUI(getClientX(startEvent));
 
-			const onMouseMove = (moveEvent: MouseEvent) => {
+			const onMove = (moveEvent: MouseEvent | TouchEvent) => {
 				if (this.isDraggingProgress) {
-					finalPercentage = updateUI(moveEvent);
+					finalPercentage = updateUI(getClientX(moveEvent));
 				}
 			};
 
-			const onMouseUp = () => {
+			const onEnd = () => {
 				this.isDraggingProgress = false;
-				document.removeEventListener('mousemove', onMouseMove);
-				document.removeEventListener('mouseup', onMouseUp);
+				document.removeEventListener('mousemove', onMove);
+				document.removeEventListener('mouseup', onEnd);
+				document.removeEventListener('touchmove', onMove);
+				document.removeEventListener('touchend', onEnd);
+				document.removeEventListener('touchcancel', onEnd);
 
 				// Commit seek
 				playerController.seek(duration * finalPercentage);
 			};
 
-			document.addEventListener('mousemove', onMouseMove);
-			document.addEventListener('mouseup', onMouseUp);
-		});
+			// Add appropriate listeners based on event type
+			if ('touches' in startEvent) {
+				document.addEventListener('touchmove', onMove, { passive: false });
+				document.addEventListener('touchend', onEnd);
+				document.addEventListener('touchcancel', onEnd);
+			} else {
+				document.addEventListener('mousemove', onMove);
+				document.addEventListener('mouseup', onEnd);
+			}
+		};
+
+		// Make progress bar draggable and clickable (mouse events)
+		progressBarContainer.addEventListener('mousedown', handleProgressInteraction);
+
+		// Touch events for mobile support
+		progressBarContainer.addEventListener('touchstart', handleProgressInteraction, { passive: false });
 
 		// Keyboard controls
 		progressBarContainer.addEventListener('keydown', (e) => {
@@ -791,7 +815,12 @@ export class PlayerView extends ItemView {
 			// Update play/pause button
 			const playPauseBtn = this.playerContentEl.querySelector('.player-button-play-pause') as HTMLElement;
 			if (playPauseBtn) {
-				setIcon(playPauseBtn, state.status === 'playing' ? 'pause' : 'play');
+				if (state.status === 'loading') {
+					playPauseBtn.addClass('is-loading');
+				} else {
+					playPauseBtn.removeClass('is-loading');
+					setIcon(playPauseBtn, state.status === 'playing' ? 'pause' : 'play');
+				}
 			}
 
 			// Update time display
@@ -1175,13 +1204,14 @@ export class PlayerView extends ItemView {
 		// Episodes
 		const episodesContainer = listContainer.createDiv({ cls: 'queue-episodes' });
 
-		for (let i = 0; i < Math.min(queue.episodeIds.length, 10); i++) {
+		const displayCount = Math.min(queue.episodeIds.length, 10);
+		for (let i = 0; i < displayCount; i++) {
 			const episodeId = queue.episodeIds[i];
 			try {
 				const episode = await episodeManager.getEpisodeWithProgress(episodeId);
 				if (episode) {
 					const isCurrent = queue.currentIndex === i;
-					this.renderQueueEpisodeItem(episodesContainer, episode, i, isCurrent, isCurrent && isCurrentlyPlaying);
+					this.renderQueueEpisodeItem(episodesContainer, episode, i, isCurrent, isCurrent && isCurrentlyPlaying, displayCount);
 				}
 			} catch (error) {
 				logger.error(`Failed to load episode: ${episodeId}`, error);
@@ -1206,63 +1236,64 @@ export class PlayerView extends ItemView {
 		episode: EpisodeWithProgress,
 		index: number,
 		isCurrent: boolean,
-		isPlaying: boolean = false
+		isPlaying: boolean = false,
+		totalItems: number = 0
 	): void {
+		const isMobile = Platform.isMobile;
 		const item = container.createDiv({
 			cls: isCurrent ? 'queue-episode-item current' : 'queue-episode-item',
 			attr: { 'data-episode-id': episode.id }
 		});
 
-		// Make item draggable
-		item.draggable = true;
+		// Only enable drag-and-drop on desktop
+		if (!isMobile) {
+			item.draggable = true;
 
-		// Drag events
-		item.addEventListener('dragstart', (e) => {
-			e.dataTransfer?.setData('text/plain', index.toString());
-			item.addClass('dragging');
-			// Set drag effect
-			if (e.dataTransfer) {
-				e.dataTransfer.effectAllowed = 'move';
-			}
-		});
+			// Drag events
+			item.addEventListener('dragstart', (e) => {
+				e.dataTransfer?.setData('text/plain', index.toString());
+				item.addClass('dragging');
+				if (e.dataTransfer) {
+					e.dataTransfer.effectAllowed = 'move';
+				}
+			});
 
-		item.addEventListener('dragend', () => {
-			item.removeClass('dragging');
-			container.querySelectorAll('.queue-episode-item').forEach(el => el.removeClass('drag-over'));
-		});
+			item.addEventListener('dragend', () => {
+				item.removeClass('dragging');
+				container.querySelectorAll('.queue-episode-item').forEach(el => el.removeClass('drag-over'));
+			});
 
-		item.addEventListener('dragover', (e) => {
-			e.preventDefault();
-			if (e.dataTransfer) {
-				e.dataTransfer.dropEffect = 'move';
-			}
-			item.addClass('drag-over');
-		});
+			item.addEventListener('dragover', (e) => {
+				e.preventDefault();
+				if (e.dataTransfer) {
+					e.dataTransfer.dropEffect = 'move';
+				}
+				item.addClass('drag-over');
+			});
 
-		item.addEventListener('dragleave', () => {
-			item.removeClass('drag-over');
-		});
+			item.addEventListener('dragleave', () => {
+				item.removeClass('drag-over');
+			});
 
-		item.addEventListener('drop', (e) => {
-			e.preventDefault();
-			item.removeClass('drag-over');
+			item.addEventListener('drop', (e) => {
+				e.preventDefault();
+				item.removeClass('drag-over');
 
-			const fromIndex = parseInt(e.dataTransfer?.getData('text/plain') || '-1');
-			const queueId = this.currentQueueId;
-			if (fromIndex !== -1 && fromIndex !== index && queueId) {
-				void (async () => {
-					try {
-						const queueManager = this.plugin.getQueueManager();
-						await queueManager.moveEpisode(queueId, fromIndex, index);
-
-						// Force refresh immediately to show new order
-						await this.renderPlayer();
-					} catch (error) {
-						logger.error('Failed to move episode', error);
-					}
-				})();
-			}
-		});
+				const fromIndex = parseInt(e.dataTransfer?.getData('text/plain') || '-1');
+				const queueId = this.currentQueueId;
+				if (fromIndex !== -1 && fromIndex !== index && queueId) {
+					void (async () => {
+						try {
+							const queueManager = this.plugin.getQueueManager();
+							await queueManager.moveEpisode(queueId, fromIndex, index);
+							await this.renderPlayer();
+						} catch (error) {
+							logger.error('Failed to move episode', error);
+						}
+					})();
+				}
+			});
+		}
 
 		// Action Icon (Drag/Play/Pause)
 		const actionEl = item.createDiv({ cls: 'queue-episode-action' });
@@ -1272,11 +1303,13 @@ export class PlayerView extends ItemView {
 			const pauseIcon = actionEl.createDiv({ cls: 'icon-current' });
 			setIcon(pauseIcon, 'pause');
 		} else {
-			// All other episodes (including current but paused) - show drag handle, swap to play on hover
-			const dragIcon = actionEl.createDiv({ cls: 'icon-drag' });
-			setIcon(dragIcon, 'grip-vertical');
+			if (!isMobile) {
+				// Desktop: show drag handle, swap to play on hover
+				const dragIcon = actionEl.createDiv({ cls: 'icon-drag' });
+				setIcon(dragIcon, 'grip-vertical');
+			}
 
-			const playIcon = actionEl.createDiv({ cls: 'icon-play' });
+			const playIcon = actionEl.createDiv({ cls: isMobile ? 'icon-play-mobile' : 'icon-play' });
 			setIcon(playIcon, 'play');
 		}
 
@@ -1300,6 +1333,37 @@ export class PlayerView extends ItemView {
 				text: this.formatDuration(episode.duration),
 				cls: 'queue-episode-duration'
 			});
+		}
+
+		// Mobile: Add reorder buttons
+		if (isMobile && !isCurrent) {
+			const reorderBtns = item.createDiv({ cls: 'queue-episode-reorder' });
+
+			// Move up button
+			if (index > 0) {
+				const moveUpBtn = reorderBtns.createEl('button', {
+					cls: 'queue-reorder-btn clickable-icon',
+					attr: { 'aria-label': 'Move up' }
+				});
+				setIcon(moveUpBtn, 'chevron-up');
+				moveUpBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					void this.moveQueueEpisode(index, index - 1);
+				});
+			}
+
+			// Move down button
+			if (index < totalItems - 1) {
+				const moveDownBtn = reorderBtns.createEl('button', {
+					cls: 'queue-reorder-btn clickable-icon',
+					attr: { 'aria-label': 'Move down' }
+				});
+				setIcon(moveDownBtn, 'chevron-down');
+				moveDownBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					void this.moveQueueEpisode(index, index + 1);
+				});
+			}
 		}
 
 		// Click to play/pause
@@ -1335,6 +1399,21 @@ export class PlayerView extends ItemView {
 				}
 			})();
 		});
+	}
+
+	/**
+	 * Move a queue episode from one position to another (for mobile)
+	 */
+	private async moveQueueEpisode(fromIndex: number, toIndex: number): Promise<void> {
+		if (!this.currentQueueId) return;
+
+		try {
+			const queueManager = this.plugin.getQueueManager();
+			await queueManager.moveEpisode(this.currentQueueId, fromIndex, toIndex);
+			await this.renderPlayer();
+		} catch (error) {
+			logger.error('Failed to move episode', error);
+		}
 	}
 
 	/**

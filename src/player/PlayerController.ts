@@ -118,6 +118,7 @@ export class PlayerController {
 		this.engine.setEventHandlers(handlers);
 	}
 
+	private loadAbortController: AbortController | null = null;
 	private lastLoadTime = 0;
 	private loadingEpisodeId: string | null = null;
 
@@ -142,6 +143,13 @@ export class PlayerController {
 			return;
 		}
 
+		// Cancel previous load
+		if (this.loadAbortController) {
+			this.loadAbortController.abort();
+		}
+		this.loadAbortController = new AbortController();
+		const signal = this.loadAbortController.signal;
+
 		this.lastLoadTime = now;
 		this.loadingEpisodeId = episode.id;
 
@@ -152,6 +160,8 @@ export class PlayerController {
 			if (this.currentEpisode) {
 				await this.progressTracker.stopTracking(true);
 			}
+
+			if (signal.aborted) return;
 
 			// Load audio
 			this.engine.load(episode.audioUrl);
@@ -165,10 +175,13 @@ export class PlayerController {
 				error: undefined,
 			});
 
+			if (signal.aborted) return;
+
 			// Apply podcast-specific settings if available
 			if (episode.podcastId && this.settingsProvider) {
 				try {
 					const podcastSettings = await this.settingsProvider(episode.podcastId);
+					if (signal.aborted) return;
 					if (podcastSettings) {
 						this.applyPodcastSettings(podcastSettings);
 						logger.info('Applied podcast-specific settings for', episode.podcastId);
@@ -181,8 +194,10 @@ export class PlayerController {
 			// Start tracking progress
 			await this.progressTracker.startTracking(episode);
 
+			if (signal.aborted) return;
+
 			// Wait for metadata to be loaded before seeking
-			await this.waitForMetadata();
+			await this.waitForMetadata(signal);
 
 			// Determine starting position
 			let startPosition = 0;
@@ -190,6 +205,8 @@ export class PlayerController {
 			// Resume from saved position if requested
 			if (resumeFromSaved) {
 				const shouldResume = await this.progressTracker.shouldResume(episode.id);
+				if (signal.aborted) return;
+
 				if (shouldResume) {
 					startPosition = await this.progressTracker.getResumePosition(episode.id);
 					logger.info('Resuming from saved position', startPosition);
@@ -208,6 +225,8 @@ export class PlayerController {
 
 			// Wait a moment for seek to complete, then update state to reflect actual position
 			await new Promise(resolve => setTimeout(resolve, 50));
+			if (signal.aborted) return;
+
 			const actualPosition = this.engine.getCurrentTime();
 			this.updateState({ position: actualPosition });
 
@@ -224,6 +243,11 @@ export class PlayerController {
 			logger.info('Episode loaded', episode.title);
 			logger.methodExit('PlayerController', 'loadEpisode');
 		} catch (error) {
+			if (signal.aborted) {
+				logger.info('Episode load aborted', episode.title);
+				return;
+			}
+
 			logger.error('Failed to load episode', error);
 			this.updateState({
 				status: 'error',
@@ -236,9 +260,14 @@ export class PlayerController {
 	/**
 	 * Wait for audio metadata to be loaded
 	 */
-	private async waitForMetadata(): Promise<void> {
-		return new Promise((resolve) => {
+	private async waitForMetadata(signal?: AbortSignal): Promise<void> {
+		return new Promise((resolve, reject) => {
 			const checkMetadata = () => {
+				if (signal?.aborted) {
+					reject(new Error('Load aborted'));
+					return;
+				}
+
 				const duration = this.engine.getDuration();
 				if (!isNaN(duration) && duration > 0) {
 					resolve();

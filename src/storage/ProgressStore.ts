@@ -117,6 +117,54 @@ export class ProgressStore extends SingleFileStore<ProgressData> {
 	}
 
 	/**
+	 * Get progress for multiple episodes at once (batch operation)
+	 * Performance optimization to avoid N+1 queries
+	 */
+	async getBatchProgress(episodeIds: string[]): Promise<Map<string, PlayProgress>> {
+		logger.methodEntry('ProgressStore', 'getBatchProgress', `count=${episodeIds.length}`);
+
+		const data = await this.load();
+		const progressMap = new Map<string, PlayProgress>();
+
+		// Create a Set for O(1) lookup
+		const episodeIdSet = new Set(episodeIds);
+
+		// Single pass through progress data
+		for (const progress of data.progress) {
+			if (episodeIdSet.has(progress.episodeId)) {
+				progressMap.set(progress.episodeId, progress);
+			}
+		}
+
+		logger.methodExit('ProgressStore', 'getBatchProgress', `found=${progressMap.size}`);
+		return progressMap;
+	}
+
+	/**
+	 * Get completion percentages for multiple episodes at once
+	 * Performance optimization to avoid N+1 queries
+	 */
+	async getBatchCompletionPercentages(episodeIds: string[]): Promise<Map<string, number>> {
+		logger.methodEntry('ProgressStore', 'getBatchCompletionPercentages', `count=${episodeIds.length}`);
+
+		const progressMap = await this.getBatchProgress(episodeIds);
+		const percentageMap = new Map<string, number>();
+
+		for (const episodeId of episodeIds) {
+			const progress = progressMap.get(episodeId);
+			if (!progress || progress.duration <= 0) {
+				percentageMap.set(episodeId, 0);
+			} else {
+				const percentage = Math.min(100, Math.max(0, (progress.position / progress.duration) * 100));
+				percentageMap.set(episodeId, percentage);
+			}
+		}
+
+		logger.methodExit('ProgressStore', 'getBatchCompletionPercentages');
+		return percentageMap;
+	}
+
+	/**
 	 * Get all progress entries for a podcast
 	 */
 	async getPodcastProgress(podcastId: string): Promise<PlayProgress[]> {

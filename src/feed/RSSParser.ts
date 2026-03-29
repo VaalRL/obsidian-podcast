@@ -9,6 +9,8 @@ import Parser from 'rss-parser';
 import { logger } from '../utils/Logger';
 import { FeedParseError } from '../utils/errorUtils';
 import { Podcast, Episode } from '../model';
+import { generatePodcastId, generateEpisodeId } from '../utils/hashUtils';
+import { ChapterParser } from './ChapterParser';
 
 /**
  * Extended RSS feed parser with custom fields for iTunes namespace
@@ -57,6 +59,8 @@ interface RSSItem {
 		author?: string;
 		summary?: string;
 	};
+	'podcast:chapters'?: string | { $?: { url?: string; type?: string } };
+	'psc:chapters'?: { 'psc:chapter'?: unknown[] } | unknown;
 }
 
 /**
@@ -84,6 +88,8 @@ export class RSSParser {
 					'itunes:episodeType',
 					'itunes:author',
 					'itunes:summary',
+					'podcast:chapters',
+					'psc:chapters',
 				] as unknown as (keyof RSSItem)[],
 			},
 		});
@@ -135,7 +141,7 @@ export class RSSParser {
 	 * Extract podcast metadata from RSS feed
 	 */
 	private extractPodcastData(feed: RSSFeed, feedUrl: string): Podcast {
-		const id = this.generatePodcastId(feedUrl);
+		const id = generatePodcastId(feedUrl);
 
 		// Get title
 		const title = feed.title?.trim() || 'Untitled Podcast';
@@ -227,7 +233,7 @@ export class RSSParser {
 		const audioUrl = item.enclosure.url.trim();
 
 		// Generate episode ID from GUID or audio URL
-		const id = this.generateEpisodeId(item.guid || audioUrl);
+		const id = generateEpisodeId(item.guid || audioUrl);
 
 		// Get title
 		const title = item.title?.trim() || 'Untitled Episode';
@@ -291,6 +297,34 @@ export class RSSParser {
 			guid: item.guid?.trim(),
 		};
 
+		// Extract chapter data
+		// Podcasting 2.0: store chaptersUrl for lazy fetch
+		if (item['podcast:chapters']) {
+			const chaptersData = item['podcast:chapters'];
+			if (typeof chaptersData === 'string') {
+				episode.chaptersUrl = chaptersData;
+			} else if (chaptersData && typeof chaptersData === 'object' && '$' in chaptersData) {
+				const attrs = (chaptersData as { $?: { url?: string } }).$;
+				if (attrs?.url) {
+					episode.chaptersUrl = attrs.url;
+				}
+			}
+		}
+
+		// Podlove PSC: parse inline chapters
+		if (item['psc:chapters']) {
+			const pscData = item['psc:chapters'];
+			if (pscData && typeof pscData === 'object' && 'psc:chapter' in (pscData as Record<string, unknown>)) {
+				const chapterParser = new ChapterParser();
+				const chapters = chapterParser.parseInlineChapters(
+					(pscData as { 'psc:chapter'?: unknown })['psc:chapter']
+				);
+				if (chapters.length > 0) {
+					episode.chapters = chapterParser.normalizeChapters(chapters, duration);
+				}
+			}
+		}
+
 		return episode;
 	}
 
@@ -334,34 +368,6 @@ export class RSSParser {
 
 		logger.warn(`Invalid duration format: ${durationStr}`);
 		return 0;
-	}
-
-	/**
-	 * Generate a unique podcast ID from feed URL
-	 */
-	private generatePodcastId(feedUrl: string): string {
-		// Use a simple hash of the feed URL
-		let hash = 0;
-		for (let i = 0; i < feedUrl.length; i++) {
-			const char = feedUrl.charCodeAt(i);
-			hash = (hash << 5) - hash + char;
-			hash = hash & hash; // Convert to 32-bit integer
-		}
-		return `podcast-${Math.abs(hash).toString(36)}`;
-	}
-
-	/**
-	 * Generate a unique episode ID from GUID or URL
-	 */
-	private generateEpisodeId(guid: string): string {
-		// Use a simple hash of the GUID
-		let hash = 0;
-		for (let i = 0; i < guid.length; i++) {
-			const char = guid.charCodeAt(i);
-			hash = (hash << 5) - hash + char;
-			hash = hash & hash; // Convert to 32-bit integer
-		}
-		return `episode-${Math.abs(hash).toString(36)}`;
 	}
 
 	/**

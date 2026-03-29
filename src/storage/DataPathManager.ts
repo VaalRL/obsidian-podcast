@@ -15,6 +15,7 @@ import { StorageError } from '../utils/errorUtils';
 export interface DataFolderStructure {
 	root: string;
 	subscriptions: string;
+	subscriptionEpisodes: string;
 	progress: string;
 	playlists: string;
 	queues: string;
@@ -45,6 +46,7 @@ export class DataPathManager {
 		return {
 			root: this.basePath,
 			subscriptions: normalizePath(`${this.basePath}/subscriptions`),
+			subscriptionEpisodes: normalizePath(`${this.basePath}/subscriptions/episodes`),
 			progress: normalizePath(`${this.basePath}/progress`),
 			playlists: normalizePath(`${this.basePath}/playlists`),
 			queues: normalizePath(`${this.basePath}/queues`),
@@ -97,6 +99,7 @@ export class DataPathManager {
 			// Create subdirectories
 			const directories = [
 				this.structure.subscriptions,
+				this.structure.subscriptionEpisodes,
 				this.structure.progress,
 				this.structure.playlists,
 				this.structure.queues,

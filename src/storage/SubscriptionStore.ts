@@ -1,14 +1,14 @@
 /**
  * SubscriptionStore - Manages podcast subscriptions
  *
- * Stores all podcast subscriptions in a single JSON file.
- * Provides methods for adding, removing, updating, and retrieving subscriptions.
+ * V2: Stores podcast index in subscriptions.json, episodes in per-podcast files
+ * under subscriptions/episodes/{podcastId}.json for reduced I/O on episode updates.
  */
 
-import { Vault } from 'obsidian';
+import { Vault, normalizePath } from 'obsidian';
 import { logger } from '../utils/Logger';
 import { StorageError } from '../utils/errorUtils';
-import { Podcast } from '../model';
+import { Podcast, Episode } from '../model';
 import { DataPathManager } from './DataPathManager';
 import { SingleFileStore } from './FileSystemStore';
 
@@ -21,14 +21,27 @@ export interface SubscriptionData {
 }
 
 /**
+ * Per-podcast episode file format
+ */
+interface EpisodeFileData {
+	podcastId: string;
+	episodes: Episode[];
+}
+
+/**
  * SubscriptionStore - Manages podcast subscriptions
  */
 export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
-	private static readonly CURRENT_VERSION = 1;
+	private static readonly CURRENT_VERSION = 2;
+
+	private episodesDir: string;
+	private migrated = false;
+	private migrationPromise: Promise<void> | null = null;
 
 	constructor(vault: Vault, pathManager: DataPathManager) {
 		const filePath = pathManager.getFilePath('subscriptions', 'subscriptions.json');
 		super(vault, pathManager, filePath);
+		this.episodesDir = pathManager.getStructure().subscriptionEpisodes;
 	}
 
 	/**
@@ -69,6 +82,12 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 			return false;
 		}
 
+		// Reject IDs containing path separators to prevent path traversal
+		if (typeof podcast.id !== 'string' || /[\/\\.]/.test(podcast.id)) {
+			logger.warn('Invalid podcast id format rejected during validation');
+			return false;
+		}
+
 		const requiredFields = ['id', 'title', 'feedUrl', 'subscribedAt'];
 		for (const field of requiredFields) {
 			if (!(field in podcast)) {
@@ -90,16 +109,116 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 		};
 	}
 
+	// ---- Episode file helpers ----
+
+	private getEpisodeFilePath(podcastId: string): string {
+		return normalizePath(`${this.episodesDir}/${podcastId}.json`);
+	}
+
+	private async loadEpisodeFile(podcastId: string): Promise<Episode[]> {
+		const filePath = this.getEpisodeFilePath(podcastId);
+		const data = await this.readJson<EpisodeFileData>(filePath, { podcastId, episodes: [] });
+		return data.episodes || [];
+	}
+
+	private async saveEpisodeFile(podcastId: string, episodes: Episode[]): Promise<void> {
+		const filePath = this.getEpisodeFilePath(podcastId);
+		await this.writeJson(filePath, { podcastId, episodes });
+	}
+
+	private async deleteEpisodeFile(podcastId: string): Promise<void> {
+		const filePath = this.getEpisodeFilePath(podcastId);
+		try {
+			if (await this.fileExists(filePath)) {
+				await this.deleteFile(filePath);
+			}
+		} catch (error) {
+			logger.warn('Failed to delete episode file', error);
+		}
+	}
+
+	// ---- V1 -> V2 migration ----
+
+	private async ensureMigrated(): Promise<void> {
+		if (this.migrated) return;
+
+		// Deduplicate concurrent migration calls
+		if (this.migrationPromise) {
+			await this.migrationPromise;
+			return;
+		}
+
+		this.migrationPromise = (async () => {
+			const data = await this.load();
+			if (data.version < 2) {
+				await this.migrateV1toV2(data);
+			}
+			this.migrated = true;
+		})();
+
+		try {
+			await this.migrationPromise;
+		} finally {
+			this.migrationPromise = null;
+		}
+	}
+
+	private async migrateV1toV2(data: SubscriptionData): Promise<void> {
+		logger.info('Migrating subscription storage from V1 to V2');
+
+		// Ensure episodes directory exists
+		const adapter = this.vault.adapter;
+		if (!(await adapter.exists(this.episodesDir))) {
+			await adapter.mkdir(this.episodesDir);
+		}
+
+		// Write per-podcast episode files first (before stripping from index)
+		for (const podcast of data.podcasts) {
+			if (podcast.episodes && podcast.episodes.length > 0) {
+				await this.saveEpisodeFile(podcast.id, podcast.episodes);
+			}
+		}
+
+		// Only strip episodes after all files written successfully
+		const strippedPodcasts: Podcast[] = data.podcasts.map(podcast => {
+			const { episodes: _, ...rest } = podcast;
+			return rest as Podcast;
+		});
+
+		// Update version and save index
+		data.podcasts = strippedPodcasts;
+		data.version = 2;
+		await this.save(data, true);
+
+		logger.info('Migration to V2 complete');
+	}
+
+	// ---- Public methods ----
+
 	/**
 	 * Get all subscribed podcasts
 	 */
 	async getAllPodcasts(): Promise<Podcast[]> {
 		logger.methodEntry('SubscriptionStore', 'getAllPodcasts');
+		await this.ensureMigrated();
 
 		const data = await this.load();
-		logger.methodExit('SubscriptionStore', 'getAllPodcasts');
 
-		return data.podcasts;
+		// Reassemble: load episodes for each podcast (batched)
+		const podcasts = [...data.podcasts];
+		const BATCH_SIZE = 10;
+		for (let i = 0; i < podcasts.length; i += BATCH_SIZE) {
+			const batch = podcasts.slice(i, i + BATCH_SIZE);
+			const episodeResults = await Promise.all(
+				batch.map(p => this.loadEpisodeFile(p.id))
+			);
+			for (let j = 0; j < batch.length; j++) {
+				batch[j].episodes = episodeResults[j];
+			}
+		}
+
+		logger.methodExit('SubscriptionStore', 'getAllPodcasts');
+		return podcasts;
 	}
 
 	/**
@@ -107,12 +226,21 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 	 */
 	async getPodcast(id: string): Promise<Podcast | null> {
 		logger.methodEntry('SubscriptionStore', 'getPodcast', id);
+		await this.ensureMigrated();
 
 		const data = await this.load();
-		const podcast = data.podcasts.find(p => p.id === id) || null;
+		const podcast = data.podcasts.find(p => p.id === id);
+		if (!podcast) {
+			logger.methodExit('SubscriptionStore', 'getPodcast');
+			return null;
+		}
+
+		// Load episodes from separate file
+		const result = { ...podcast };
+		result.episodes = await this.loadEpisodeFile(id);
 
 		logger.methodExit('SubscriptionStore', 'getPodcast');
-		return podcast;
+		return result;
 	}
 
 	/**
@@ -120,12 +248,20 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 	 */
 	async getPodcastByFeedUrl(feedUrl: string): Promise<Podcast | null> {
 		logger.methodEntry('SubscriptionStore', 'getPodcastByFeedUrl', feedUrl);
+		await this.ensureMigrated();
 
 		const data = await this.load();
-		const podcast = data.podcasts.find(p => p.feedUrl === feedUrl) || null;
+		const podcast = data.podcasts.find(p => p.feedUrl === feedUrl);
+		if (!podcast) {
+			logger.methodExit('SubscriptionStore', 'getPodcastByFeedUrl');
+			return null;
+		}
+
+		const result = { ...podcast };
+		result.episodes = await this.loadEpisodeFile(result.id);
 
 		logger.methodExit('SubscriptionStore', 'getPodcastByFeedUrl');
-		return podcast;
+		return result;
 	}
 
 	/**
@@ -137,19 +273,30 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 		if (!this.validatePodcast(podcast)) {
 			throw new StorageError('Invalid podcast data', this.filePath);
 		}
+		await this.ensureMigrated();
 
 		const data = await this.load();
 
-		// Check if podcast already exists
+		// Extract episodes
+		const episodes = podcast.episodes || [];
+		const podcastForIndex = { ...podcast };
+		delete podcastForIndex.episodes;
+
 		const existingIndex = data.podcasts.findIndex(p => p.id === podcast.id);
 		if (existingIndex !== -1) {
 			logger.warn('Podcast already exists, updating instead', podcast.id);
-			data.podcasts[existingIndex] = podcast;
+			data.podcasts[existingIndex] = podcastForIndex;
 		} else {
-			data.podcasts.push(podcast);
+			data.podcasts.push(podcastForIndex);
 		}
 
 		await this.save(data);
+
+		// Save episodes separately
+		if (episodes.length > 0) {
+			await this.saveEpisodeFile(podcast.id, episodes);
+		}
+
 		logger.methodExit('SubscriptionStore', 'addPodcast');
 	}
 
@@ -162,6 +309,7 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 		if (!this.validatePodcast(podcast)) {
 			throw new StorageError('Invalid podcast data', this.filePath);
 		}
+		await this.ensureMigrated();
 
 		const data = await this.load();
 		const index = data.podcasts.findIndex(p => p.id === podcast.id);
@@ -170,8 +318,16 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 			throw new StorageError(`Podcast not found: ${podcast.id}`, this.filePath);
 		}
 
-		data.podcasts[index] = podcast;
+		// Extract episodes
+		const episodes = podcast.episodes || [];
+		const podcastForIndex = { ...podcast };
+		delete podcastForIndex.episodes;
+
+		data.podcasts[index] = podcastForIndex;
 		await this.save(data);
+
+		// Save episodes separately
+		await this.saveEpisodeFile(podcast.id, episodes);
 
 		logger.methodExit('SubscriptionStore', 'updatePodcast');
 	}
@@ -181,6 +337,7 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 	 */
 	async removePodcast(id: string): Promise<void> {
 		logger.methodEntry('SubscriptionStore', 'removePodcast', id);
+		await this.ensureMigrated();
 
 		const data = await this.load();
 		const index = data.podcasts.findIndex(p => p.id === id);
@@ -193,6 +350,9 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 		data.podcasts.splice(index, 1);
 		await this.save(data);
 
+		// Delete episode file
+		await this.deleteEpisodeFile(id);
+
 		logger.methodExit('SubscriptionStore', 'removePodcast');
 	}
 
@@ -200,6 +360,7 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 	 * Check if a podcast is subscribed
 	 */
 	async isSubscribed(id: string): Promise<boolean> {
+		await this.ensureMigrated();
 		const data = await this.load();
 		return data.podcasts.some(p => p.id === id);
 	}
@@ -208,6 +369,7 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 	 * Check if a feed URL is subscribed
 	 */
 	async isSubscribedByFeedUrl(feedUrl: string): Promise<boolean> {
+		await this.ensureMigrated();
 		const data = await this.load();
 		return data.podcasts.some(p => p.feedUrl === feedUrl);
 	}
@@ -216,6 +378,7 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 	 * Get subscription count
 	 */
 	async getSubscriptionCount(): Promise<number> {
+		await this.ensureMigrated();
 		const data = await this.load();
 		return data.podcasts.length;
 	}
@@ -225,6 +388,7 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 	 */
 	async updatePodcastEpisodes(id: string, episodes: Podcast['episodes']): Promise<void> {
 		logger.methodEntry('SubscriptionStore', 'updatePodcastEpisodes', id);
+		await this.ensureMigrated();
 
 		const data = await this.load();
 		const podcast = data.podcasts.find(p => p.id === id);
@@ -233,10 +397,13 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 			throw new StorageError(`Podcast not found: ${id}`, this.filePath);
 		}
 
-		podcast.episodes = episodes;
+		// Update lastFetchedAt in index
 		podcast.lastFetchedAt = new Date();
-
 		await this.save(data);
+
+		// Save episodes to separate file (the big I/O win)
+		await this.saveEpisodeFile(id, episodes || []);
+
 		logger.methodExit('SubscriptionStore', 'updatePodcastEpisodes');
 	}
 
@@ -296,9 +463,15 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 	 */
 	async exportSubscriptions(): Promise<SubscriptionData> {
 		logger.methodEntry('SubscriptionStore', 'exportSubscriptions');
-		const data = await this.load();
+
+		// Export with episodes inline for portability
+		const podcasts = await this.getAllPodcasts();
+
 		logger.methodExit('SubscriptionStore', 'exportSubscriptions');
-		return data;
+		return {
+			podcasts,
+			version: SubscriptionStore.CURRENT_VERSION,
+		};
 	}
 
 	/**
@@ -313,21 +486,50 @@ export class SubscriptionStore extends SingleFileStore<SubscriptionData> {
 		}
 
 		if (replace) {
-			// Replace all subscriptions
-			await this.save(importData);
+			// Delete all existing episode files
+			const currentData = await this.load();
+			for (const podcast of currentData.podcasts) {
+				await this.deleteEpisodeFile(podcast.id);
+			}
+
+			// Save new data split
+			const indexPodcasts: Podcast[] = [];
+			for (const podcast of importData.podcasts) {
+				const episodes = podcast.episodes || [];
+				const podcastForIndex = { ...podcast };
+				delete podcastForIndex.episodes;
+				indexPodcasts.push(podcastForIndex);
+
+				if (episodes.length > 0) {
+					await this.saveEpisodeFile(podcast.id, episodes);
+				}
+			}
+
+			await this.save({
+				podcasts: indexPodcasts,
+				version: SubscriptionStore.CURRENT_VERSION,
+			});
 		} else {
-			// Merge with existing subscriptions
+			// Merge
+			await this.ensureMigrated();
 			const currentData = await this.load();
 			const mergedPodcasts = [...currentData.podcasts];
 
 			for (const importedPodcast of importData.podcasts) {
+				const episodes = importedPodcast.episodes || [];
+				const podcastForIndex = { ...importedPodcast };
+				delete podcastForIndex.episodes;
+
 				const existingIndex = mergedPodcasts.findIndex(p => p.id === importedPodcast.id);
 				if (existingIndex !== -1) {
-					// Update existing podcast
-					mergedPodcasts[existingIndex] = importedPodcast;
+					mergedPodcasts[existingIndex] = podcastForIndex;
 				} else {
-					// Add new podcast
-					mergedPodcasts.push(importedPodcast);
+					mergedPodcasts.push(podcastForIndex);
+				}
+
+				// Save episode file
+				if (episodes.length > 0) {
+					await this.saveEpisodeFile(importedPodcast.id, episodes);
 				}
 			}
 

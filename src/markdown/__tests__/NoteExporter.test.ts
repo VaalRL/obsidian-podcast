@@ -120,7 +120,7 @@ describe('NoteExporter', () => {
 			const content = (mockVault.create as jest.Mock).mock.calls[0][1];
 			expect(content).toContain('---');
 			expect(content).toMatch(/title:.*Episode 1: Introduction/); // Title may be quoted
-			expect(content).toContain('podcast: Test Podcast');
+			expect(content).toMatch(/podcast: "?Test Podcast"?/);
 			expect(content).toContain('episodeNumber: 1');
 		});
 
@@ -255,11 +255,11 @@ describe('NoteExporter', () => {
 
 			const content = (mockVault.create as jest.Mock).mock.calls[0][1];
 			expect(content).toMatch(/title:.*Episode 1: Introduction/); // May be quoted
-			expect(content).toContain('podcast: Test Podcast');
-			expect(content).toContain('author: Test Author');
+			expect(content).toMatch(/podcast: "?Test Podcast"?/);
+			expect(content).toMatch(/author: "?Test Author"?/);
 			expect(content).toContain('episodeNumber: 1');
 			expect(content).toContain('seasonNumber: 1');
-			expect(content).toContain('guid: episode-1-guid');
+			expect(content).toMatch(/guid: "?episode-1-guid"?/);
 			expect(content).toContain('progress: 50');
 			expect(content).toContain('completed: false');
 		});

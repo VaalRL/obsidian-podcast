@@ -257,14 +257,26 @@ export class PlayerController {
 		}
 	}
 
+	/** Maximum time to wait for audio metadata (ms) */
+	private static readonly METADATA_TIMEOUT_MS = 10000;
+
 	/**
-	 * Wait for audio metadata to be loaded
+	 * Wait for audio metadata to be loaded (with timeout protection)
 	 */
 	private async waitForMetadata(signal?: AbortSignal): Promise<void> {
 		return new Promise((resolve, reject) => {
+			const startTime = Date.now();
+
 			const checkMetadata = () => {
 				if (signal?.aborted) {
 					reject(new Error('Load aborted'));
+					return;
+				}
+
+				// Timeout protection: resolve anyway after max wait time
+				if (Date.now() - startTime > PlayerController.METADATA_TIMEOUT_MS) {
+					logger.warn('Metadata load timed out, continuing without duration');
+					resolve();
 					return;
 				}
 

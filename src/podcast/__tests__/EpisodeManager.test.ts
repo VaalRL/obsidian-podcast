@@ -87,6 +87,8 @@ describe('EpisodeManager', () => {
 			getCompletedEpisodes: jest.fn(),
 			getRecentlyPlayed: jest.fn(),
 			getTotalListeningTime: jest.fn(),
+			getBatchProgress: jest.fn().mockResolvedValue(new Map()),
+			getBatchCompletionPercentages: jest.fn().mockResolvedValue(new Map()),
 		} as any;
 
 		mockSubscriptionStore = {
@@ -454,8 +456,8 @@ describe('EpisodeManager', () => {
 			const completedProgress = { ...sampleProgress, completed: true };
 			mockSubscriptionStore.getAllPodcasts.mockResolvedValue([podcastWithEpisodes]);
 			mockProgressStore.getCompletedEpisodes.mockResolvedValue([completedProgress]);
-			mockProgressStore.getProgress.mockResolvedValue(completedProgress);
-			mockProgressStore.getCompletionPercentage.mockResolvedValue(100);
+			mockProgressStore.getBatchProgress.mockResolvedValue(new Map([['ep-1', completedProgress]]));
+			mockProgressStore.getBatchCompletionPercentages.mockResolvedValue(new Map([['ep-1', 100]]));
 
 			const result = await manager.getCompletedEpisodes('podcast-1');
 
@@ -522,14 +524,19 @@ describe('EpisodeManager', () => {
 		it('should calculate podcast statistics', async () => {
 			const podcastWithEpisodes = { ...samplePodcast, episodes: sampleEpisodes };
 			mockSubscriptionStore.getPodcast.mockResolvedValue(podcastWithEpisodes);
-			mockProgressStore.getProgress
-				.mockResolvedValueOnce({ ...sampleProgress, completed: true, position: 3600 })
-				.mockResolvedValueOnce({ ...sampleProgress, episodeId: 'ep-2', position: 1200 })
-				.mockResolvedValueOnce(null);
-			mockProgressStore.getCompletionPercentage
-				.mockResolvedValueOnce(100)
-				.mockResolvedValueOnce(50)
-				.mockResolvedValueOnce(0);
+
+			const ep1Progress = { ...sampleProgress, completed: true, position: 3600 };
+			const ep2Progress = { ...sampleProgress, episodeId: 'ep-2', position: 1200, completed: false };
+
+			mockProgressStore.getBatchProgress.mockResolvedValue(new Map([
+				['ep-1', ep1Progress],
+				['ep-2', ep2Progress],
+			]));
+			mockProgressStore.getBatchCompletionPercentages.mockResolvedValue(new Map([
+				['ep-1', 100],
+				['ep-2', 50],
+				['ep-3', 0],
+			]));
 
 			const result = await manager.getPodcastStatistics('podcast-1');
 

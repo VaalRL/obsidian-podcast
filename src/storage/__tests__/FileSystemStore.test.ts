@@ -178,15 +178,15 @@ describe('FileSystemStore', () => {
 		});
 
 		describe('save', () => {
-			it('should save data to file', async () => {
+			it('should save data to file immediately', async () => {
 				const testData: TestData = { id: 'test', name: 'Test', value: 42 };
 				mockAdapter.exists.mockResolvedValue(false);
 
-				await store.save(testData);
+				await store.save(testData, true);
 
 				expect(mockAdapter.write).toHaveBeenCalledWith(
 					'test-data.json',
-					JSON.stringify(testData, null, 2)
+					JSON.stringify(testData)
 				);
 			});
 
@@ -194,7 +194,7 @@ describe('FileSystemStore', () => {
 				const testData: TestData = { id: 'test', name: 'Test', value: 42 };
 				mockAdapter.exists.mockResolvedValue(true);
 
-				await store.save(testData);
+				await store.save(testData, true);
 
 				// Default SingleFileStore.save() does not create backup
 				expect(mockPathManager.createBackup).not.toHaveBeenCalled();
@@ -213,7 +213,7 @@ describe('FileSystemStore', () => {
 				mockAdapter.exists.mockResolvedValue(false);
 				mockAdapter.write.mockRejectedValue(new Error('Write failed'));
 
-				await expect(store.save(testData)).rejects.toThrow(StorageError);
+				await expect(store.save(testData, true)).rejects.toThrow(StorageError);
 			});
 		});
 
@@ -226,7 +226,7 @@ describe('FileSystemStore', () => {
 				const defaultValue = { id: 'default', name: 'Default', value: 0 };
 				expect(mockAdapter.write).toHaveBeenCalledWith(
 					'test-data.json',
-					JSON.stringify(defaultValue, null, 2)
+					JSON.stringify(defaultValue)
 				);
 			});
 		});
@@ -342,7 +342,7 @@ describe('FileSystemStore', () => {
 
 				expect(mockAdapter.write).toHaveBeenCalledWith(
 					'test-dir/item-1.json',
-					JSON.stringify(testData, null, 2)
+					JSON.stringify(testData)
 				);
 			});
 		});
@@ -442,11 +442,11 @@ describe('FileSystemStore', () => {
 				expect(mockAdapter.write).toHaveBeenCalledTimes(2);
 				expect(mockAdapter.write).toHaveBeenCalledWith(
 					'test-dir/item-1.json',
-					JSON.stringify(items[0], null, 2)
+					JSON.stringify(items[0])
 				);
 				expect(mockAdapter.write).toHaveBeenCalledWith(
 					'test-dir/item-2.json',
-					JSON.stringify(items[1], null, 2)
+					JSON.stringify(items[1])
 				);
 			});
 

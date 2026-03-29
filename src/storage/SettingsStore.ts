@@ -99,7 +99,7 @@ export class SettingsStore extends SingleFileStore<PluginSettings> {
 	 */
 	async updateSettings(settings: PluginSettings): Promise<void> {
 		logger.methodEntry('SettingsStore', 'updateSettings');
-		await this.save(settings);
+		await this.save(settings, true);
 		logger.methodExit('SettingsStore', 'updateSettings');
 	}
 
@@ -115,7 +115,7 @@ export class SettingsStore extends SingleFileStore<PluginSettings> {
 		const settings = await this.load();
 		settings[key] = value;
 
-		await this.save(settings);
+		await this.save(settings, true);
 		logger.methodExit('SettingsStore', 'updateSetting');
 	}
 
@@ -145,7 +145,7 @@ export class SettingsStore extends SingleFileStore<PluginSettings> {
 		const settings = await this.load();
 		settings.defaultPlaybackSettings.volume = Math.max(0, Math.min(1, volume));
 
-		await this.save(settings);
+		await this.save(settings, true);
 		logger.methodExit('SettingsStore', 'updateDefaultVolume');
 	}
 
@@ -158,7 +158,7 @@ export class SettingsStore extends SingleFileStore<PluginSettings> {
 		const settings = await this.load();
 		settings.defaultPlaybackSettings.playbackSpeed = Math.max(0.5, Math.min(3.0, speed));
 
-		await this.save(settings);
+		await this.save(settings, true);
 		logger.methodExit('SettingsStore', 'updateDefaultPlaybackSpeed');
 	}
 
@@ -171,7 +171,7 @@ export class SettingsStore extends SingleFileStore<PluginSettings> {
 		const settings = await this.load();
 		settings.defaultPlaybackSettings.skipIntroSeconds = Math.max(0, seconds);
 
-		await this.save(settings);
+		await this.save(settings, true);
 		logger.methodExit('SettingsStore', 'updateDefaultSkipIntro');
 	}
 
@@ -184,7 +184,7 @@ export class SettingsStore extends SingleFileStore<PluginSettings> {
 		const settings = await this.load();
 		settings.defaultPlaybackSettings.skipOutroSeconds = Math.max(0, seconds);
 
-		await this.save(settings);
+		await this.save(settings, true);
 		logger.methodExit('SettingsStore', 'updateDefaultSkipOutro');
 	}
 
@@ -229,7 +229,7 @@ export class SettingsStore extends SingleFileStore<PluginSettings> {
 	 */
 	async resetToDefaults(): Promise<void> {
 		logger.methodEntry('SettingsStore', 'resetToDefaults');
-		await this.save(this.getDefaultValue());
+		await this.save(this.getDefaultValue(), true);
 		logger.methodExit('SettingsStore', 'resetToDefaults');
 	}
 
@@ -253,7 +253,7 @@ export class SettingsStore extends SingleFileStore<PluginSettings> {
 			throw new StorageError('Invalid import settings', this.filePath);
 		}
 
-		await this.save(importSettings);
+		await this.save(importSettings, true);
 		logger.methodExit('SettingsStore', 'importSettings');
 	}
 
@@ -282,7 +282,7 @@ export class SettingsStore extends SingleFileStore<PluginSettings> {
 		// Save migrated settings if they were changed
 		if (JSON.stringify(settings) !== JSON.stringify(migratedSettings)) {
 			logger.info('Migrating settings to current version');
-			await this.save(migratedSettings);
+			await this.save(migratedSettings, true);
 		}
 
 		logger.methodExit('SettingsStore', 'loadWithMigration');

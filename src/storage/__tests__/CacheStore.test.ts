@@ -496,7 +496,7 @@ describe('ImageCacheStore', () => {
 
 			expect(mockAdapter.write).toHaveBeenCalledWith(
 				'cache/image-index.json',
-				JSON.stringify(index, null, 2)
+				JSON.stringify(index)
 			);
 		});
 

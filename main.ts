@@ -6,7 +6,8 @@ import {
 	SubscriptionStore,
 	ProgressStore,
 	FeedCacheStore,
-	ImageCacheStore
+	ImageCacheStore,
+	BookmarkStore
 } from './src/storage';
 import {
 	PodcastPlayerSettingTab,
@@ -17,13 +18,17 @@ import {
 	PlaylistQueueView,
 	PLAYLIST_QUEUE_VIEW_TYPE,
 	SubscribePodcastModal,
-	MiniPlayer
+	MiniPlayer,
+	StatisticsView,
+	STATISTICS_VIEW_TYPE,
+	registerEmbeddedPlayerProcessor
 } from './src/ui';
 import { PlaylistStore, PlaylistManager } from './src/playlist';
 import { QueueStore, QueueManager } from './src/queue';
 import { FeedService, FeedSyncManager } from './src/feed';
 import { PodcastService, EpisodeManager } from './src/podcast';
 import { PlaybackEngine, ProgressTracker, PlayerController } from './src/player';
+import { validateVolume, getNextPlaybackSpeed, getPreviousPlaybackSpeed } from './src/utils/audioUtils';
 import { NoteExporter } from './src/markdown';
 import { CleanupService } from './src/cleanup/CleanupService';
 import { BackupService } from './src/backup';
@@ -62,6 +67,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 	private queueStore: QueueStore;
 	private feedCacheStore: FeedCacheStore;
 	private imageCacheStore: ImageCacheStore;
+	private bookmarkStore: BookmarkStore;
 
 	// Service layer
 	private feedService: FeedService;
@@ -117,6 +123,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 		this.queueStore = new QueueStore(this.app.vault, this.pathManager);
 		this.feedCacheStore = new FeedCacheStore(this.app.vault, this.pathManager);
 		this.imageCacheStore = new ImageCacheStore(this.app.vault, this.pathManager);
+		this.bookmarkStore = new BookmarkStore(this.app.vault, this.pathManager);
 
 		// Initialize service layer
 		this.feedService = new FeedService(this.feedCacheStore);
@@ -310,7 +317,8 @@ export default class PodcastPlayerPlugin extends Plugin {
 				completedRetentionDays: 30,
 				inProgressRetentionDays: 90,
 				maxCacheSizeMB: 100
-			}
+			},
+			this.bookmarkStore
 		);
 
 		// Start automatic cleanup
@@ -365,6 +373,18 @@ export default class PodcastPlayerPlugin extends Plugin {
 			logger.warn(`View ${PLAYLIST_QUEUE_VIEW_TYPE} might be already registered`, e);
 		}
 
+		try {
+			this.registerView(
+				STATISTICS_VIEW_TYPE,
+				(leaf) => new StatisticsView(leaf, this)
+			);
+		} catch (e) {
+			logger.warn(`View ${STATISTICS_VIEW_TYPE} might be already registered`, e);
+		}
+
+		// Register embedded player code block processor
+		registerEmbeddedPlayerProcessor(this);
+
 		// Register settings tab
 		this.addSettingTab(new PodcastPlayerSettingTab(this.app, this));
 
@@ -397,7 +417,7 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'subscribe',
-			name: 'Subscribe',
+			name: 'Subscribe to podcast',
 			callback: () => {
 				new SubscribePodcastModal(
 					this.app,
@@ -414,9 +434,180 @@ export default class PodcastPlayerPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'open-playlists-queues',
-			name: 'Open playlists',
+			name: 'Open playlists & queues',
 			callback: () => {
 				void this.activatePlaylistQueueView();
+			}
+		});
+
+		// Playback control commands
+		this.addCommand({
+			id: 'play-pause',
+			name: 'Play / Pause',
+			callback: () => {
+				const state = this.playerController.getState();
+				if (state.status === 'playing') {
+					this.playerController.pause();
+				} else {
+					void this.playerController.play();
+				}
+			}
+		});
+
+		this.addCommand({
+			id: 'skip-forward',
+			name: 'Skip forward 30s',
+			callback: () => {
+				this.playerController.skipForward(30);
+			}
+		});
+
+		this.addCommand({
+			id: 'skip-backward',
+			name: 'Skip backward 15s',
+			callback: () => {
+				this.playerController.skipBackward(15);
+			}
+		});
+
+		this.addCommand({
+			id: 'next-episode',
+			name: 'Next episode',
+			callback: () => {
+				void this.navigateNext();
+			}
+		});
+
+		this.addCommand({
+			id: 'previous-episode',
+			name: 'Previous episode',
+			callback: () => {
+				void this.navigatePrevious();
+			}
+		});
+
+		this.addCommand({
+			id: 'volume-up',
+			name: 'Volume up',
+			callback: () => {
+				const state = this.playerController.getState();
+				const newVolume = validateVolume(state.volume + 0.1);
+				this.playerController.setVolume(newVolume);
+			}
+		});
+
+		this.addCommand({
+			id: 'volume-down',
+			name: 'Volume down',
+			callback: () => {
+				const state = this.playerController.getState();
+				const newVolume = validateVolume(state.volume - 0.1);
+				this.playerController.setVolume(newVolume);
+			}
+		});
+
+		this.addCommand({
+			id: 'mute-toggle',
+			name: 'Toggle mute',
+			callback: () => {
+				this.playerController.toggleMute();
+			}
+		});
+
+		this.addCommand({
+			id: 'speed-up',
+			name: 'Increase playback speed',
+			callback: () => {
+				const state = this.playerController.getState();
+				const newSpeed = getNextPlaybackSpeed(state.playbackSpeed);
+				this.playerController.setPlaybackSpeed(newSpeed);
+			}
+		});
+
+		this.addCommand({
+			id: 'speed-down',
+			name: 'Decrease playback speed',
+			callback: () => {
+				const state = this.playerController.getState();
+				const newSpeed = getPreviousPlaybackSpeed(state.playbackSpeed);
+				this.playerController.setPlaybackSpeed(newSpeed);
+			}
+		});
+
+		this.addCommand({
+			id: 'add-bookmark',
+			name: 'Add bookmark at current position',
+			callback: () => {
+				const episode = this.playerController.getCurrentEpisode();
+				if (!episode) {
+					new Notice('No episode is currently playing');
+					return;
+				}
+				const position = this.playerController.getCurrentPosition();
+				void (async () => {
+					try {
+						await this.bookmarkStore.addBookmark(episode.id, position);
+						const mins = Math.floor(position / 60);
+						const secs = Math.floor(position % 60);
+						new Notice(`Bookmark added at ${mins}:${secs.toString().padStart(2, '0')}`);
+					} catch (error) {
+						logger.error('Failed to add bookmark', error);
+						new Notice('Failed to add bookmark');
+					}
+				})();
+			}
+		});
+
+		this.addCommand({
+			id: 'open-statistics',
+			name: 'Open listening statistics',
+			callback: () => {
+				void this.activateStatisticsView();
+			}
+		});
+
+		this.addCommand({
+			id: 'next-chapter',
+			name: 'Jump to next chapter',
+			callback: () => {
+				const episode = this.playerController.getCurrentEpisode();
+				if (!episode?.chapters || episode.chapters.length === 0) {
+					new Notice('No chapters available');
+					return;
+				}
+				const position = this.playerController.getCurrentPosition();
+				const next = episode.chapters.find(ch => ch.startTime > position + 1);
+				if (next) {
+					this.playerController.seek(next.startTime);
+				} else {
+					new Notice('Already at last chapter');
+				}
+			}
+		});
+
+		this.addCommand({
+			id: 'previous-chapter',
+			name: 'Jump to previous chapter',
+			callback: () => {
+				const episode = this.playerController.getCurrentEpisode();
+				if (!episode?.chapters || episode.chapters.length === 0) {
+					new Notice('No chapters available');
+					return;
+				}
+				const position = this.playerController.getCurrentPosition();
+				// Find current chapter, then go to its start (if >3s in) or previous chapter
+				let target: number | null = null;
+				for (let i = episode.chapters.length - 1; i >= 0; i--) {
+					if (episode.chapters[i].startTime < position - 3) {
+						target = episode.chapters[i].startTime;
+						break;
+					}
+				}
+				if (target !== null) {
+					this.playerController.seek(target);
+				} else {
+					this.playerController.seek(0);
+				}
 			}
 		});
 
@@ -659,6 +850,85 @@ export default class PodcastPlayerPlugin extends Plugin {
 	}
 
 	/**
+	 * Get the progress store (for UI components)
+	 */
+	getProgressStore(): ProgressStore {
+		return this.progressStore;
+	}
+
+	/**
+	 * Get the bookmark store (for UI components)
+	 */
+	getBookmarkStore(): BookmarkStore {
+		return this.bookmarkStore;
+	}
+
+	/**
+	 * Navigate to the next episode in the current queue/playlist
+	 */
+	async navigateNext(): Promise<void> {
+		try {
+			const playerController = this.playerController;
+
+			if (playerController.isPlayingFromPlaylist()) {
+				const nextEpisodeId = playerController.getNextPlaylistEpisodeId();
+				if (nextEpisodeId) {
+					await this.loadAndPlayEpisode(nextEpisodeId);
+				}
+				return;
+			}
+
+			const currentQueue = await this.queueManager.getCurrentQueue();
+			if (!currentQueue) return;
+
+			const nextEpisodeId = await this.queueManager.next(currentQueue.id);
+			if (nextEpisodeId) {
+				await this.loadAndPlayEpisode(nextEpisodeId);
+			}
+		} catch (error) {
+			logger.error('Failed to navigate to next episode', error);
+		}
+	}
+
+	/**
+	 * Navigate to the previous episode in the current queue/playlist
+	 */
+	async navigatePrevious(): Promise<void> {
+		try {
+			const playerController = this.playerController;
+
+			if (playerController.isPlayingFromPlaylist()) {
+				const previousEpisodeId = playerController.getPreviousPlaylistEpisodeId();
+				if (previousEpisodeId) {
+					await this.loadAndPlayEpisode(previousEpisodeId);
+				}
+				return;
+			}
+
+			const currentQueue = await this.queueManager.getCurrentQueue();
+			if (!currentQueue) return;
+
+			const previousEpisodeId = await this.queueManager.previous(currentQueue.id);
+			if (previousEpisodeId) {
+				await this.loadAndPlayEpisode(previousEpisodeId);
+			}
+		} catch (error) {
+			logger.error('Failed to navigate to previous episode', error);
+		}
+	}
+
+	/**
+	 * Load and play an episode by ID
+	 */
+	private async loadAndPlayEpisode(episodeId: string): Promise<void> {
+		if (!episodeId) return;
+		const episode = await this.episodeManager.getEpisodeWithProgress(episodeId);
+		if (episode) {
+			await this.playerController.loadEpisode(episode, true, true);
+		}
+	}
+
+	/**
 	 * Activate the playlist/queue view
 	 */
 	async activatePlaylistQueueView() {
@@ -690,5 +960,32 @@ export default class PodcastPlayerPlugin extends Plugin {
 		}
 
 		logger.methodExit('PodcastPlayerPlugin', 'activatePlaylistQueueView');
+	}
+
+	/**
+	 * Activate the statistics view
+	 */
+	async activateStatisticsView() {
+		const { workspace } = this.app;
+
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(STATISTICS_VIEW_TYPE);
+
+		if (leaves.length > 0) {
+			leaf = leaves[0];
+		} else {
+			// Open in main area (not sidebar) for more space
+			leaf = workspace.getLeaf(true);
+			if (leaf) {
+				await leaf.setViewState({
+					type: STATISTICS_VIEW_TYPE,
+					active: true
+				});
+			}
+		}
+
+		if (leaf) {
+			await workspace.revealLeaf(leaf);
+		}
 	}
 }

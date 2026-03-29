@@ -62,7 +62,7 @@ describe('Logger', () => {
 			logger.debug('Test debug message', 'arg1', 'arg2');
 
 			expect(consoleDebugSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [DEBUG]',
+				'[Podcasts] [DEBUG]',
 				'Test debug message',
 				'arg1',
 				'arg2'
@@ -98,7 +98,7 @@ describe('Logger', () => {
 
 			// Info uses console.debug per Obsidian plugin requirements
 			expect(consoleDebugSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [INFO]',
+				'[Podcasts] [INFO]',
 				'Test info message',
 				'arg1'
 			);
@@ -110,7 +110,7 @@ describe('Logger', () => {
 
 			// Info uses console.debug per Obsidian plugin requirements
 			expect(consoleDebugSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [INFO]',
+				'[Podcasts] [INFO]',
 				'Test info message'
 			);
 		});
@@ -142,7 +142,7 @@ describe('Logger', () => {
 			logger.warn('Test warn message', 'arg1', 'arg2');
 
 			expect(consoleWarnSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [WARN]',
+				'[Podcasts] [WARN]',
 				'Test warn message',
 				'arg1',
 				'arg2'
@@ -154,7 +154,7 @@ describe('Logger', () => {
 			logger.warn('Test warn message');
 
 			expect(consoleWarnSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [WARN]',
+				'[Podcasts] [WARN]',
 				'Test warn message'
 			);
 		});
@@ -164,7 +164,7 @@ describe('Logger', () => {
 			logger.warn('Test warn message');
 
 			expect(consoleWarnSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [WARN]',
+				'[Podcasts] [WARN]',
 				'Test warn message'
 			);
 		});
@@ -184,7 +184,7 @@ describe('Logger', () => {
 			logger.error('Test error message', error, 'arg1');
 
 			expect(consoleErrorSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [ERROR]',
+				'[Podcasts] [ERROR]',
 				'Test error message',
 				'Test error',
 				error.stack,
@@ -197,7 +197,7 @@ describe('Logger', () => {
 			logger.error('Test error message', 'some error');
 
 			expect(consoleErrorSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [ERROR]',
+				'[Podcasts] [ERROR]',
 				'Test error message',
 				'some error'
 			);
@@ -231,7 +231,7 @@ describe('Logger', () => {
 			logger.methodEntry('TestClass', 'testMethod', 'arg1', 'arg2');
 
 			expect(consoleDebugSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [DEBUG]',
+				'[Podcasts] [DEBUG]',
 				'TestClass.testMethod() called',
 				'arg1',
 				'arg2'
@@ -252,7 +252,7 @@ describe('Logger', () => {
 			logger.methodExit('TestClass', 'testMethod', { result: 'success' });
 
 			expect(consoleDebugSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [DEBUG]',
+				'[Podcasts] [DEBUG]',
 				'TestClass.testMethod() completed',
 				{ result: 'success' }
 			);
@@ -263,7 +263,7 @@ describe('Logger', () => {
 			logger.methodExit('TestClass', 'testMethod');
 
 			expect(consoleDebugSpy).toHaveBeenCalledWith(
-				'[Podcast Player] [DEBUG]',
+				'[Podcasts] [DEBUG]',
 				'TestClass.testMethod() completed',
 				undefined
 			);

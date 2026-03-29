@@ -10,10 +10,12 @@
 
 import { App, Modal, Notice, setIcon } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
-import { Episode, Podcast, PlayProgress } from '../model';
+import { Episode, Podcast, PlayProgress, Bookmark, Chapter } from '../model';
+import { ChapterParser } from '../feed/ChapterParser';
 import { AddToQueueModal } from './AddToQueueModal';
 import { AddToPlaylistModal } from './AddToPlaylistModal';
 import { logger } from '../utils/Logger';
+import { formatTime } from '../utils/timeUtils';
 
 /**
  * Modal for viewing episode details
@@ -23,6 +25,7 @@ export class EpisodeDetailModal extends Modal {
 	episode: Episode;
 	podcast: Podcast | null = null;
 	progress: PlayProgress | undefined;
+	bookmarks: Bookmark[] = [];
 
 	constructor(app: App, plugin: PodcastPlayerPlugin, episode: Episode) {
 		super(app);
@@ -58,6 +61,10 @@ export class EpisodeDetailModal extends Modal {
 			const episodeManager = this.plugin.getEpisodeManager();
 			const episodeWithProgress = await episodeManager.getEpisodeWithProgress(this.episode.id);
 			this.progress = episodeWithProgress?.progress;
+
+			// Load bookmarks
+			const bookmarkStore = this.plugin.getBookmarkStore();
+			this.bookmarks = await bookmarkStore.getBookmarks(this.episode.id);
 		} catch (error) {
 			logger.error('Failed to load episode data', error);
 		}
@@ -84,6 +91,18 @@ export class EpisodeDetailModal extends Modal {
 		// Progress information section
 		if (this.progress) {
 			this.renderProgressInfo();
+		}
+
+		// Chapters section
+		if (this.episode.chapters && this.episode.chapters.length > 0) {
+			this.renderChapters(this.episode.chapters);
+		} else if (this.episode.chaptersUrl) {
+			this.renderChaptersLoadButton();
+		}
+
+		// Bookmarks section
+		if (this.bookmarks.length > 0) {
+			this.renderBookmarks();
 		}
 
 		// Action buttons section
@@ -201,7 +220,9 @@ export class EpisodeDetailModal extends Modal {
 		const progressBarContainer = section.createDiv({ cls: 'episode-detail-progress-container' });
 		const progressBar = progressBarContainer.createDiv({ cls: 'episode-detail-progress-bar' });
 		const progressFill = progressBar.createDiv({ cls: 'episode-detail-progress-fill' });
-		const percentage = (this.progress.position / this.episode.duration) * 100;
+		const percentage = this.episode.duration > 0
+			? (this.progress.position / this.episode.duration) * 100
+			: 0;
 		progressFill.setCssProps({ width: `${percentage}%` });
 
 		// Completion percentage
@@ -211,10 +232,12 @@ export class EpisodeDetailModal extends Modal {
 		});
 
 		// Completed status
-		const completedRow = section.createDiv({ cls: 'episode-detail-row' });
-		const completedSpan = completedRow.createSpan({ cls: 'episode-detail-completed' });
-		setIcon(completedSpan, 'check');
-		completedSpan.createSpan({ text: ' Completed' });
+		if (this.progress.completed) {
+			const completedRow = section.createDiv({ cls: 'episode-detail-row' });
+			const completedSpan = completedRow.createSpan({ cls: 'episode-detail-completed' });
+			setIcon(completedSpan, 'check');
+			completedSpan.createSpan({ text: ' Completed' });
+		}
 
 		// Last played
 		if (this.progress.lastPlayedAt) {
@@ -222,6 +245,123 @@ export class EpisodeDetailModal extends Modal {
 			lastPlayedRow.createSpan({ text: 'Last played: ', cls: 'episode-detail-label' });
 			lastPlayedRow.createSpan({ text: this.formatDate(this.progress.lastPlayedAt) });
 		}
+	}
+
+	/**
+	 * Render bookmarks section
+	 */
+	private renderBookmarks(): void {
+		const { contentEl } = this;
+		const section = contentEl.createDiv({ cls: 'episode-detail-section episode-detail-bookmarks' });
+
+		section.createEl('h3', { text: 'Bookmarks' });
+
+		const list = section.createDiv({ cls: 'bookmark-list' });
+
+		for (const bookmark of this.bookmarks) {
+			const item = list.createDiv({ cls: 'bookmark-item' });
+
+			// Seek button with timestamp
+			const seekBtn = item.createEl('button', {
+				cls: 'bookmark-seek-btn clickable-icon',
+				attr: { 'aria-label': `Seek to ${formatTime(bookmark.position)}` }
+			});
+			setIcon(seekBtn, 'play');
+			seekBtn.createSpan({ text: ` ${formatTime(bookmark.position)}`, cls: 'bookmark-time' });
+			seekBtn.addEventListener('click', () => {
+				this.plugin.playerController.seek(bookmark.position);
+				this.close();
+			});
+
+			// Label
+			if (bookmark.label) {
+				item.createSpan({ text: bookmark.label, cls: 'bookmark-label' });
+			}
+
+			// Delete button
+			const deleteBtn = item.createEl('button', {
+				cls: 'bookmark-delete-btn clickable-icon',
+				attr: { 'aria-label': 'Remove bookmark' }
+			});
+			setIcon(deleteBtn, 'x');
+			deleteBtn.addEventListener('click', () => {
+				deleteBtn.disabled = true;
+				void (async () => {
+					const bookmarkStore = this.plugin.getBookmarkStore();
+					await bookmarkStore.removeBookmark(this.episode.id, bookmark.id);
+					this.bookmarks = this.bookmarks.filter(b => b.id !== bookmark.id);
+					this.render();
+				})();
+			});
+		}
+	}
+
+	/**
+	 * Render chapters section
+	 */
+	private renderChapters(chapters: Chapter[]): void {
+		const { contentEl } = this;
+		const section = contentEl.createDiv({ cls: 'episode-detail-section episode-detail-chapters' });
+
+		section.createEl('h3', { text: `Chapters (${chapters.length})` });
+
+		const list = section.createDiv({ cls: 'chapters-list' });
+
+		for (const chapter of chapters) {
+			const item = list.createDiv({ cls: 'chapter-item' });
+
+			const seekBtn = item.createEl('button', {
+				cls: 'bookmark-seek-btn clickable-icon',
+				attr: { 'aria-label': `Seek to ${formatTime(chapter.startTime)}` }
+			});
+			setIcon(seekBtn, 'play');
+			seekBtn.createSpan({ text: ` ${formatTime(chapter.startTime)}`, cls: 'chapter-time' });
+			seekBtn.addEventListener('click', () => {
+				this.plugin.playerController.seek(chapter.startTime);
+				this.close();
+			});
+
+			item.createSpan({ text: chapter.title, cls: 'chapter-title' });
+		}
+	}
+
+	/**
+	 * Render a button to lazily load chapters from external URL
+	 */
+	private renderChaptersLoadButton(): void {
+		const { contentEl } = this;
+		const section = contentEl.createDiv({ cls: 'episode-detail-section episode-detail-chapters' });
+
+		section.createEl('h3', { text: 'Chapters' });
+
+		const loadBtn = section.createEl('button', {
+			cls: 'clickable-icon',
+			text: 'Load chapters'
+		});
+		setIcon(loadBtn, 'download');
+
+		loadBtn.addEventListener('click', () => {
+			loadBtn.disabled = true;
+			loadBtn.textContent = 'Loading...';
+			void (async () => {
+				try {
+					const parser = new ChapterParser();
+					const chapters = await parser.parseExternalChapters(this.episode.chaptersUrl!);
+					if (chapters.length > 0) {
+						this.episode.chapters = parser.normalizeChapters(chapters, this.episode.duration);
+						this.render();
+					} else {
+						new Notice('No chapters found');
+						loadBtn.textContent = 'No chapters found';
+					}
+				} catch (error) {
+					logger.error('Failed to load chapters', error);
+					new Notice('Failed to load chapters');
+					loadBtn.disabled = false;
+					loadBtn.textContent = 'Load chapters';
+				}
+			})();
+		});
 	}
 
 	/**

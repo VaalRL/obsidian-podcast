@@ -9,6 +9,7 @@
 
 import { logger } from '../utils/Logger';
 import { ProgressStore } from '../storage/ProgressStore';
+import { BookmarkStore } from '../storage/BookmarkStore';
 import { FeedCacheStore, ImageCacheStore } from '../storage/CacheStore';
 import { EpisodeManager } from '../podcast/EpisodeManager';
 
@@ -54,6 +55,7 @@ export interface CleanupStats {
  */
 export class CleanupService {
     private progressStore: ProgressStore;
+    private bookmarkStore: BookmarkStore | null;
     private feedCacheStore: FeedCacheStore;
     private imageCacheStore: ImageCacheStore;
     private episodeManager: EpisodeManager;
@@ -70,13 +72,15 @@ export class CleanupService {
         feedCacheStore: FeedCacheStore,
         imageCacheStore: ImageCacheStore,
         episodeManager: EpisodeManager,
-        config: Partial<CleanupConfig> = {}
+        config: Partial<CleanupConfig> = {},
+        bookmarkStore?: BookmarkStore
     ) {
         this.progressStore = progressStore;
         this.feedCacheStore = feedCacheStore;
         this.imageCacheStore = imageCacheStore;
         this.episodeManager = episodeManager;
         this.config = { ...DEFAULT_CLEANUP_CONFIG, ...config };
+        this.bookmarkStore = bookmarkStore || null;
     }
 
     /**
@@ -181,8 +185,11 @@ export class CleanupService {
                 // Check if the episode was completed before the cutoff date
                 const completedAt = episode.progress.lastPlayedAt;
                 if (completedAt && new Date(completedAt) < cutoffDate) {
-                    // Remove the progress record
+                    // Remove the progress record and associated bookmarks
                     await this.progressStore.removeProgress(episode.id);
+                    if (this.bookmarkStore) {
+                        await this.bookmarkStore.removeEpisodeBookmarks(episode.id);
+                    }
                     removed++;
                     logger.debug(`Removed progress for completed episode: ${episode.title}`);
                 }

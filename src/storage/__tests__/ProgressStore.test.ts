@@ -148,6 +148,10 @@ describe('ProgressStore', () => {
 
 			await progressStore.updateProgress(newProgress);
 
+			// updateProgress uses debounced save for performance during playback
+			// Flush to verify the data is correct
+			await (progressStore as any).flush();
+
 			expect(mockWrite).toHaveBeenCalled();
 			const writeCall = mockWrite.mock.calls[mockWrite.mock.calls.length - 1];
 			const savedData = JSON.parse(writeCall[1]);
@@ -182,6 +186,7 @@ describe('ProgressStore', () => {
 			};
 
 			await progressStore.updateProgress(updatedProgress);
+			await (progressStore as any).flush();
 
 			expect(mockWrite).toHaveBeenCalled();
 			const writeCall = mockWrite.mock.calls[mockWrite.mock.calls.length - 1];
@@ -199,6 +204,7 @@ describe('ProgressStore', () => {
 			vault.adapter.mkdir = jest.fn().mockResolvedValue(undefined);
 
 			await progressStore.updatePosition('ep-123', 'podcast-456', 75, 200);
+			await (progressStore as any).flush();
 
 			expect(mockWrite).toHaveBeenCalled();
 			const writeCall = mockWrite.mock.calls[mockWrite.mock.calls.length - 1];
@@ -216,6 +222,7 @@ describe('ProgressStore', () => {
 			vault.adapter.mkdir = jest.fn().mockResolvedValue(undefined);
 
 			await progressStore.markCompleted('ep-123', 'podcast-456', 200);
+			await (progressStore as any).flush();
 
 			expect(mockWrite).toHaveBeenCalled();
 			const writeCall = mockWrite.mock.calls[mockWrite.mock.calls.length - 1];

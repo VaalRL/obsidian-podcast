@@ -6,22 +6,15 @@
  * - Queues (playback queues)
  */
 
-import { ItemView, WorkspaceLeaf, Menu, Notice, setIcon, Events } from 'obsidian';
+import { ItemView, WorkspaceLeaf, Menu, Notice, setIcon } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
 import { Playlist, Queue, Episode } from '../model';
+import type { PodcastEvents } from '../model/events';
 import { EpisodeDetailModal } from './EpisodeDetailModal';
+import { TextInputModal } from './TextInputModal';
 import { logger } from '../utils/Logger';
 
 export const PLAYLIST_QUEUE_VIEW_TYPE = 'playlist-queue-view';
-
-// Type-safe event registration helper
-type PodcastEvents = Events & {
-	on(name: 'podcast:queue-updated', callback: (queueId: string) => void): ReturnType<Events['on']>;
-	on(name: 'podcast:player-state-updated', callback: () => void): ReturnType<Events['on']>;
-	on(name: 'podcast:episode-changed', callback: () => void): ReturnType<Events['on']>;
-	on(name: 'podcast:playlist-updated', callback: (playlistId: string) => void): ReturnType<Events['on']>;
-	on(name: 'podcast:queue-changed', callback: () => void): ReturnType<Events['on']>;
-};
 
 /**
  * View mode: playlists or queues
@@ -576,12 +569,39 @@ export class PlaylistQueueView extends ItemView {
 	}
 
 	/**
+	 * Prompt user for text input via modal
+	 */
+	private promptForInput(title: string, message: string, defaultValue: string = ''): Promise<string | null> {
+		return new Promise((resolve) => {
+			new TextInputModal(this.app, title, message, defaultValue, resolve).open();
+		});
+	}
+
+	/**
 	 * Handle create new playlist/queue
 	 */
-	private handleCreate(): void {
-		// Placeholder - will show modal for creating new playlist/queue
-		new Notice(`Create new ${this.viewMode === 'playlists' ? 'playlist' : 'queue'} - coming soon!`);
-		// TODO: Show modal for name input
+	private async handleCreate(): Promise<void> {
+		const isPlaylist = this.viewMode === 'playlists';
+		const typeLabel = isPlaylist ? 'playlist' : 'queue';
+
+		const name = await this.promptForInput(`New ${typeLabel}`, 'Name');
+		if (!name || !name.trim()) return;
+
+		try {
+			if (isPlaylist) {
+				const playlistManager = this.plugin.getPlaylistManager();
+				const playlist = await playlistManager.createPlaylist(name.trim());
+				new Notice(`Playlist "${playlist.name}" created`);
+			} else {
+				const queueManager = this.plugin.getQueueManager();
+				const queue = await queueManager.createQueue(name.trim());
+				new Notice(`Queue "${queue.name}" created`);
+			}
+			await this.render();
+		} catch (error) {
+			logger.error(`Failed to create ${typeLabel}`, error);
+			new Notice(`Failed to create ${typeLabel}`);
+		}
 	}
 
 	/**
@@ -619,8 +639,19 @@ export class PlaylistQueueView extends ItemView {
 				.setTitle('Rename')
 				.setIcon('pencil')
 				.onClick(() => {
-					new Notice('Rename playlist - coming soon!');
-					// TODO: Show rename modal
+					void (async () => {
+						const newName = await this.promptForInput('Rename playlist', 'New name', playlist.name);
+						if (!newName || !newName.trim() || newName.trim() === playlist.name) return;
+						try {
+							const playlistManager = this.plugin.getPlaylistManager();
+							await playlistManager.updatePlaylist(playlist.id, { name: newName.trim() });
+							new Notice(`Playlist renamed to "${newName.trim()}"`);
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to rename playlist', error);
+							new Notice('Failed to rename playlist');
+						}
+					})();
 				})
 		);
 
@@ -669,8 +700,19 @@ export class PlaylistQueueView extends ItemView {
 				.setTitle('Rename')
 				.setIcon('pencil')
 				.onClick(() => {
-					new Notice('Rename queue - coming soon!');
-					// TODO: Show rename modal
+					void (async () => {
+						const newName = await this.promptForInput('Rename queue', 'New name', queue.name);
+						if (!newName || !newName.trim() || newName.trim() === queue.name) return;
+						try {
+							const queueManager = this.plugin.getQueueManager();
+							await queueManager.updateQueue(queue.id, { name: newName.trim() });
+							new Notice(`Queue renamed to "${newName.trim()}"`);
+							await this.render();
+						} catch (error) {
+							logger.error('Failed to rename queue', error);
+							new Notice('Failed to rename queue');
+						}
+					})();
 				})
 		);
 

@@ -25,18 +25,37 @@ jest.mock('../FileSystemStore', () => {
 	return {
 		SingleFileStore: class {
 			protected filePath: string;
+			protected vault: any;
 			protected data: any = null;
+			private fileStore: Map<string, any> = new Map(); // For episode files
 
 			constructor(vault: any, pathManager: any, filePath: string) {
 				this.filePath = filePath;
+				this.vault = vault;
 			}
 
 			async load(): Promise<any> {
 				return this.data || this['getDefaultValue']();
 			}
 
-			async save(data: any): Promise<void> {
+			async save(data: any, immediate?: boolean): Promise<void> {
 				this.data = data;
+			}
+
+			protected async readJson<T>(path: string, fallback: T): Promise<T> {
+				return (this.fileStore.get(path) as T) ?? fallback;
+			}
+
+			protected async writeJson<T>(path: string, data: T): Promise<void> {
+				this.fileStore.set(path, data);
+			}
+
+			protected async fileExists(path: string): Promise<boolean> {
+				return this.fileStore.has(path);
+			}
+
+			protected async deleteFile(path: string): Promise<void> {
+				this.fileStore.delete(path);
 			}
 
 			protected validate(data: any): boolean {
@@ -76,9 +95,17 @@ describe('SubscriptionStore', () => {
 	};
 
 	beforeEach(() => {
-		mockVault = {} as any;
+		mockVault = {
+			adapter: {
+				exists: jest.fn().mockResolvedValue(true),
+				mkdir: jest.fn().mockResolvedValue(undefined),
+			},
+		} as any;
 		mockPathManager = {
 			getFilePath: jest.fn().mockReturnValue('subscriptions.json'),
+			getStructure: jest.fn().mockReturnValue({
+				subscriptionEpisodes: 'subscriptions/episodes',
+			}),
 		} as any;
 
 		store = new SubscriptionStore(mockVault, mockPathManager);
@@ -90,6 +117,9 @@ describe('SubscriptionStore', () => {
 			// Create a fresh instance to test constructor
 			const freshPathManager = {
 				getFilePath: jest.fn().mockReturnValue('subscriptions.json'),
+				getStructure: jest.fn().mockReturnValue({
+					subscriptionEpisodes: 'subscriptions/episodes',
+				}),
 			} as any;
 
 			const freshStore = new SubscriptionStore(mockVault, freshPathManager);
@@ -106,13 +136,15 @@ describe('SubscriptionStore', () => {
 		it('should return all podcasts', async () => {
 			const data: SubscriptionData = {
 				podcasts: [samplePodcast1, samplePodcast2],
-				version: 1,
+				version: 2,
 			};
 			(store as any).data = data;
 
 			const result = await store.getAllPodcasts();
 
-			expect(result).toEqual([samplePodcast1, samplePodcast2]);
+			expect(result).toHaveLength(2);
+			expect(result[0].id).toBe('podcast-1');
+			expect(result[1].id).toBe('podcast-2');
 		});
 
 		it('should return empty array when no podcasts', async () => {
@@ -126,19 +158,21 @@ describe('SubscriptionStore', () => {
 		it('should get podcast by ID', async () => {
 			const data: SubscriptionData = {
 				podcasts: [samplePodcast1, samplePodcast2],
-				version: 1,
+				version: 2,
 			};
 			(store as any).data = data;
 
 			const result = await store.getPodcast('podcast-1');
 
-			expect(result).toEqual(samplePodcast1);
+			expect(result).not.toBeNull();
+			expect(result?.id).toBe('podcast-1');
+			expect(result?.title).toBe('Test Podcast 1');
 		});
 
 		it('should return null if podcast not found', async () => {
 			const data: SubscriptionData = {
 				podcasts: [samplePodcast1],
-				version: 1,
+				version: 2,
 			};
 			(store as any).data = data;
 
@@ -152,19 +186,20 @@ describe('SubscriptionStore', () => {
 		it('should get podcast by feed URL', async () => {
 			const data: SubscriptionData = {
 				podcasts: [samplePodcast1, samplePodcast2],
-				version: 1,
+				version: 2,
 			};
 			(store as any).data = data;
 
 			const result = await store.getPodcastByFeedUrl('https://example.com/feed1.rss');
 
-			expect(result).toEqual(samplePodcast1);
+			expect(result).not.toBeNull();
+			expect(result?.id).toBe('podcast-1');
 		});
 
 		it('should return null if feed URL not found', async () => {
 			const data: SubscriptionData = {
 				podcasts: [samplePodcast1],
-				version: 1,
+				version: 2,
 			};
 			(store as any).data = data;
 
@@ -179,7 +214,8 @@ describe('SubscriptionStore', () => {
 			await store.addPodcast(samplePodcast1);
 
 			const allPodcasts = await store.getAllPodcasts();
-			expect(allPodcasts).toContainEqual(samplePodcast1);
+			expect(allPodcasts).toHaveLength(1);
+			expect(allPodcasts[0].id).toBe('podcast-1');
 		});
 
 		it('should update existing podcast if ID already exists', async () => {
@@ -199,6 +235,30 @@ describe('SubscriptionStore', () => {
 			const invalidPodcast = { id: 'test' } as Podcast; // Missing required fields
 
 			await expect(store.addPodcast(invalidPodcast)).rejects.toThrow(StorageError);
+		});
+
+		it('should save episodes to separate file', async () => {
+			const podcastWithEpisodes = {
+				...samplePodcast1,
+				episodes: [
+					{
+						id: 'ep-1',
+						podcastId: 'podcast-1',
+						title: 'Episode 1',
+						description: 'Description',
+						audioUrl: 'https://example.com/ep1.mp3',
+						duration: 3600,
+						publishDate: new Date(),
+					},
+				],
+			};
+
+			await store.addPodcast(podcastWithEpisodes);
+
+			// Verify episodes are loaded back when getting the podcast
+			const result = await store.getPodcast('podcast-1');
+			expect(result?.episodes).toHaveLength(1);
+			expect(result?.episodes?.[0].id).toBe('ep-1');
 		});
 	});
 
@@ -295,7 +355,7 @@ describe('SubscriptionStore', () => {
 	});
 
 	describe('updatePodcastEpisodes', () => {
-		it('should update podcast episodes', async () => {
+		it('should update podcast episodes in separate file', async () => {
 			await store.addPodcast(samplePodcast1);
 
 			const episodes = [
@@ -430,14 +490,14 @@ describe('SubscriptionStore', () => {
 	});
 
 	describe('exportSubscriptions', () => {
-		it('should export all subscription data', async () => {
+		it('should export all subscription data with episodes', async () => {
 			await store.addPodcast(samplePodcast1);
 			await store.addPodcast(samplePodcast2);
 
 			const result = await store.exportSubscriptions();
 
 			expect(result.podcasts).toHaveLength(2);
-			expect(result.version).toBe(1);
+			expect(result.version).toBe(2);
 		});
 	});
 
@@ -447,7 +507,7 @@ describe('SubscriptionStore', () => {
 
 			const importData: SubscriptionData = {
 				podcasts: [samplePodcast2],
-				version: 1,
+				version: 2,
 			};
 
 			await store.importSubscriptions(importData, true);
@@ -462,7 +522,7 @@ describe('SubscriptionStore', () => {
 
 			const importData: SubscriptionData = {
 				podcasts: [samplePodcast2],
-				version: 1,
+				version: 2,
 			};
 
 			await store.importSubscriptions(importData, false);
@@ -477,7 +537,7 @@ describe('SubscriptionStore', () => {
 			const updatedPodcast = { ...samplePodcast1, title: 'Updated Title' };
 			const importData: SubscriptionData = {
 				podcasts: [updatedPodcast],
-				version: 1,
+				version: 2,
 			};
 
 			await store.importSubscriptions(importData, false);
@@ -492,7 +552,7 @@ describe('SubscriptionStore', () => {
 		it('should throw error for invalid import data', async () => {
 			const invalidData = {
 				podcasts: 'not an array',
-				version: 1,
+				version: 2,
 			} as any;
 
 			await expect(store.importSubscriptions(invalidData, false)).rejects.toThrow(
@@ -505,7 +565,7 @@ describe('SubscriptionStore', () => {
 		it('should validate correct subscription data', () => {
 			const validData: SubscriptionData = {
 				podcasts: [samplePodcast1],
-				version: 1,
+				version: 2,
 			};
 
 			const result = (store as any).validate(validData);
@@ -522,7 +582,7 @@ describe('SubscriptionStore', () => {
 		it('should reject data without podcasts array', () => {
 			const invalidData = {
 				podcasts: 'not an array',
-				version: 1,
+				version: 2,
 			};
 
 			const result = (store as any).validate(invalidData);
@@ -544,7 +604,7 @@ describe('SubscriptionStore', () => {
 		it('should reject data with invalid podcast', () => {
 			const invalidData = {
 				podcasts: [{ id: 'test' }], // Missing required fields
-				version: 1,
+				version: 2,
 			};
 
 			const result = (store as any).validate(invalidData);
@@ -559,8 +619,54 @@ describe('SubscriptionStore', () => {
 
 			expect(result).toEqual({
 				podcasts: [],
-				version: 1,
+				version: 2,
 			});
+		});
+	});
+
+	describe('V1 to V2 migration', () => {
+		it('should migrate V1 data with inline episodes to V2', async () => {
+			const episodes = [
+				{
+					id: 'ep-1',
+					podcastId: 'podcast-1',
+					title: 'Episode 1',
+					description: 'Desc',
+					audioUrl: 'https://example.com/ep1.mp3',
+					duration: 3600,
+					publishDate: new Date(),
+				},
+			];
+
+			const v1Data: SubscriptionData = {
+				podcasts: [{ ...samplePodcast1, episodes }],
+				version: 1,
+			};
+			(store as any).data = v1Data;
+
+			// Trigger migration via getAllPodcasts
+			const result = await store.getAllPodcasts();
+
+			// After migration, episodes should be loaded from separate file
+			expect(result).toHaveLength(1);
+			expect(result[0].episodes).toEqual(episodes);
+
+			// The index data version should be updated
+			const indexData = (store as any).data;
+			expect(indexData.version).toBe(2);
+		});
+
+		it('should handle V1 data with no episodes gracefully', async () => {
+			const v1Data: SubscriptionData = {
+				podcasts: [samplePodcast1],
+				version: 1,
+			};
+			(store as any).data = v1Data;
+
+			const result = await store.getAllPodcasts();
+
+			expect(result).toHaveLength(1);
+			expect(result[0].episodes).toEqual([]);
 		});
 	});
 });

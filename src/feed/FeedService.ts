@@ -12,8 +12,19 @@ import { Podcast, Episode } from '../model';
 import { RSSParser } from './RSSParser';
 import { AtomParser } from './AtomParser';
 import { FeedCacheStore } from '../storage/CacheStore';
-import * as https from 'https';
-import * as url from 'url';
+
+// Dynamic import for Node.js modules (not available on mobile)
+let nodeHttps: typeof import('https') | null = null;
+let nodeUrl: typeof import('url') | null = null;
+try {
+	nodeHttps = require('https');
+	nodeUrl = require('url');
+} catch {
+	// Node.js modules not available (e.g., mobile platform)
+}
+
+/** Maximum allowed feed response size (10 MB) */
+const MAX_FEED_RESPONSE_SIZE = 10 * 1024 * 1024;
 
 /**
  * Feed type enumeration
@@ -166,6 +177,11 @@ export class FeedService {
 	): Promise<{ xml: string; responseEtag?: string; responseLastModified?: string }> {
 		logger.debug('Fetching feed XML', feedUrl);
 
+		// SSRF protection: validate URL before fetching
+		if (!FeedService.validateFeedUrl(feedUrl)) {
+			throw new NetworkError('Invalid or blocked feed URL', feedUrl);
+		}
+
 		try {
 			const response = await retryWithBackoff(
 				async () => {
@@ -218,6 +234,12 @@ export class FeedService {
 			);
 
 			const xml = response.text;
+
+			// Enforce response size limit
+			if (xml.length > MAX_FEED_RESPONSE_SIZE) {
+				throw new NetworkError(`Feed response too large (${xml.length} bytes, max ${MAX_FEED_RESPONSE_SIZE})`, feedUrl);
+			}
+
 			const responseEtag = response.headers['etag'];
 			const responseLastModified = response.headers['last-modified'];
 
@@ -241,7 +263,11 @@ export class FeedService {
 				}
 				const xml = await fetchResponse.text();
 
-				// Standard fetch headers are a bit different, but we try to get what we can
+				// Enforce response size limit
+				if (xml.length > MAX_FEED_RESPONSE_SIZE) {
+					throw new NetworkError(`Feed response too large (${xml.length} bytes)`, feedUrl);
+				}
+
 				const responseEtag = fetchResponse.headers.get('etag') || undefined;
 				const responseLastModified = fetchResponse.headers.get('last-modified') || undefined;
 
@@ -251,29 +277,37 @@ export class FeedService {
 					responseLastModified
 				};
 			} catch (fetchErr) {
+				// Final fallback: Node.js native https module (desktop only)
+				if (!nodeHttps || !nodeUrl) {
+					logger.error('All fetch methods failed (Node.js modules not available)', fetchErr);
+					throw new NetworkError('Failed to fetch feed', feedUrl, fetchErr);
+				}
+
 				logger.warn('fetch fallback failed, trying Node https', fetchErr);
 
-				// Final fallback: Node.js native https module
-				// This bypasses Electron/Chromium network stack completely
 				try {
 					return await new Promise((resolve, reject) => {
-						const urlObj = new url.URL(feedUrl);
+						const urlObj = new nodeUrl!.URL(feedUrl);
 						const options = {
 							hostname: urlObj.hostname,
 							path: urlObj.pathname + urlObj.search,
 							method: 'GET',
 							headers: {
-								'User-Agent': userAgent || 'Obsidian/1.0.0', // Minimal UA
+								'User-Agent': userAgent || 'Obsidian/1.0.0',
 								'Accept': '*/*',
 							},
-							rejectUnauthorized: false // Be permissive with SSL to avoid handshake failures on some setups
 						};
 
-						const req = https.request(options, (res: any) => {
+						const req = nodeHttps!.request(options, (res: any) => {
 							let data = '';
 
 							res.on('data', (chunk: any) => {
 								data += chunk;
+								// Enforce response size limit
+								if (data.length > MAX_FEED_RESPONSE_SIZE) {
+									req.destroy();
+									reject(new NetworkError('Feed response too large', feedUrl));
+								}
 							});
 
 							res.on('end', () => {
@@ -407,12 +441,41 @@ export class FeedService {
 	/**
 	 * Validate feed URL
 	 */
-	static validateFeedUrl(url: string): boolean {
+	static validateFeedUrl(feedUrl: string): boolean {
 		try {
-			const urlObj = new URL(url);
-			return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+			const urlObj = new URL(feedUrl);
+			if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+				return false;
+			}
+			// Block private/internal network addresses (SSRF protection)
+			if (FeedService.isPrivateHost(urlObj.hostname)) {
+				return false;
+			}
+			return true;
 		} catch {
 			return false;
 		}
+	}
+
+	/**
+	 * Check if a hostname resolves to a private/internal network address
+	 */
+	private static isPrivateHost(hostname: string): boolean {
+		// Block localhost variants
+		if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '0.0.0.0') {
+			return true;
+		}
+
+		// Block private IP ranges (RFC 1918 + link-local)
+		const privateRanges = [
+			/^10\./,                          // 10.0.0.0/8
+			/^172\.(1[6-9]|2\d|3[01])\./,    // 172.16.0.0/12
+			/^192\.168\./,                     // 192.168.0.0/16
+			/^169\.254\./,                     // Link-local
+			/^fc00:/i,                         // IPv6 unique local
+			/^fe80:/i,                         // IPv6 link-local
+		];
+
+		return privateRanges.some(r => r.test(hostname));
 	}
 }

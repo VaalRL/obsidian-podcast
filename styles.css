@@ -2293,6 +2293,488 @@
     .virtual-list-content>[data-virtual-index] {
         contain: layout style paint;
     }
+}
+
+/* ==========================================================================
+   Bookmark Styles
+   ========================================================================== */
+
+.player-button-bookmark {
+    color: var(--text-muted);
+}
+
+.player-button-bookmark:hover {
+    color: var(--text-accent);
+}
+
+/* Episode Detail Modal - Bookmark list */
+.episode-detail-bookmarks .bookmark-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bookmark-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: var(--radius-s);
+}
+
+.bookmark-item:hover {
+    background: var(--background-modifier-hover);
+}
+
+.bookmark-seek-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    color: var(--text-accent);
+    background: none;
+    border: none;
+    padding: 2px 6px;
+    border-radius: var(--radius-s);
+    font-size: var(--font-ui-small);
+}
+
+.bookmark-seek-btn:hover {
+    background: var(--background-modifier-hover);
+}
+
+.bookmark-time {
+    font-family: var(--font-monospace);
+    font-size: var(--font-ui-smaller);
+}
+
+.bookmark-label {
+    flex: 1;
+    color: var(--text-normal);
+    font-size: var(--font-ui-small);
+}
+
+.bookmark-delete-btn {
+    color: var(--text-faint);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 2px;
+    border-radius: var(--radius-s);
+    flex-shrink: 0;
+    transition: color 0.15s;
+}
+
+.bookmark-item:hover .bookmark-delete-btn,
+.bookmark-delete-btn:focus-visible {
+    color: var(--text-muted);
+}
+
+.bookmark-delete-btn:hover {
+    color: var(--text-error);
+}
+
+/* ==========================================
+ * Chapters Section
+ * ========================================== */
+
+.chapters-section {
+    margin-top: var(--size-4-2);
+    border-top: 1px solid var(--background-modifier-border);
+    padding-top: var(--size-4-2);
+}
+
+.chapters-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-1);
+    cursor: pointer;
+    padding: var(--size-4-1) 0;
+    color: var(--text-muted);
+    font-size: var(--font-ui-small);
+    user-select: none;
+}
+
+.chapters-toggle:hover {
+    color: var(--text-normal);
+}
+
+.chapters-toggle-icon {
+    display: flex;
+    align-items: center;
+}
+
+.chapters-toggle-label {
+    font-weight: var(--font-semibold);
+}
+
+.chapters-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.chapters-list.is-collapsed {
+    display: none;
+}
+
+.chapter-item {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+    padding: var(--size-4-1) var(--size-4-2);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    font-size: var(--font-ui-small);
+    transition: background-color 0.1s;
+}
+
+.chapter-item:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.chapter-item.is-active {
+    background-color: var(--background-modifier-active-hover);
+    color: var(--text-accent);
+}
+
+.chapter-time {
+    font-family: var(--font-monospace);
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    min-width: 50px;
+    flex-shrink: 0;
+}
+
+.chapter-item.is-active .chapter-time {
+    color: var(--text-accent);
+}
+
+.chapter-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.episode-detail-chapters .chapters-list {
+    max-height: none;
+}
+
+/* ==========================================
+ * Listening Statistics View
+ * ========================================== */
+
+.podcast-statistics-view {
+    padding: var(--size-4-4);
+    overflow-y: auto;
+}
+
+.podcast-statistics-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.stats-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--size-4-4);
+}
+
+.stats-header h2 {
+    margin: 0;
+}
+
+.stats-refresh-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: var(--size-4-1);
+    border-radius: var(--radius-s);
+}
+
+.stats-refresh-btn:hover {
+    color: var(--text-normal);
+    background-color: var(--background-modifier-hover);
+}
+
+.stats-section {
+    margin-bottom: var(--size-4-6);
+}
+
+.stats-section-header {
+    margin: 0 0 var(--size-4-3) 0;
+    font-size: var(--font-ui-medium);
+    color: var(--text-normal);
+}
+
+.stats-loading {
+    text-align: center;
+    padding: var(--size-4-8);
+    color: var(--text-muted);
+}
+
+.stats-error {
+    text-align: center;
+    padding: var(--size-4-8);
+    color: var(--text-error);
+}
+
+.stats-empty-message {
+    text-align: center;
+    padding: var(--size-4-4);
+    color: var(--text-faint);
+    font-size: var(--font-ui-small);
+}
+
+/* Overview Cards */
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--size-4-3);
+}
+
+.stats-card {
+    background: var(--background-secondary);
+    border-radius: var(--radius-m);
+    padding: var(--size-4-3);
+    text-align: center;
+}
+
+.stats-card-icon {
+    color: var(--text-accent);
+    margin-bottom: var(--size-4-1);
+}
+
+.stats-card-value {
+    font-size: var(--font-ui-large);
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+    margin-bottom: var(--size-4-1);
+}
+
+.stats-card-label {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+/* Streaks */
+.stats-streaks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--size-4-3);
+}
+
+.stats-streak-current,
+.stats-streak-longest {
+    background: var(--background-secondary);
+    border-radius: var(--radius-m);
+    padding: var(--size-4-3);
+    text-align: center;
+}
+
+.stats-streak-value {
+    font-size: var(--font-ui-large);
+    font-weight: var(--font-semibold);
+    color: var(--text-normal);
+    margin-bottom: var(--size-4-1);
+}
+
+.stats-streak-label {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+/* Activity Chart */
+.stats-activity-chart {
+    background: var(--background-secondary);
+    border-radius: var(--radius-m);
+    padding: var(--size-4-3);
+}
+
+.stats-activity-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 120px;
+}
+
+.stats-activity-bar-container {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.stats-activity-bar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+}
+
+.stats-activity-bar-fill {
+    width: 100%;
+    min-height: 2px;
+    background: var(--text-accent);
+    border-radius: var(--radius-s) var(--radius-s) 0 0;
+    opacity: 0.7;
+    transition: opacity 0.1s;
+}
+
+.stats-activity-bar-container:hover .stats-activity-bar-fill {
+    opacity: 1;
+}
+
+.stats-activity-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--size-4-1);
+}
+
+.stats-activity-label {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-faint);
+}
+
+/* Podcast Breakdown */
+.stats-podcast-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-2);
+}
+
+.stats-podcast-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4-1);
+    padding: var(--size-4-2) var(--size-4-3);
+    background: var(--background-secondary);
+    border-radius: var(--radius-m);
+}
+
+.stats-podcast-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.stats-podcast-name {
+    font-weight: var(--font-semibold);
+    font-size: var(--font-ui-small);
+    color: var(--text-normal);
+}
+
+.stats-podcast-stats {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+.stats-podcast-progress-bar {
+    height: 4px;
+    background: var(--background-modifier-border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.stats-podcast-progress-fill {
+    height: 100%;
+    background: var(--text-accent);
+    border-radius: 2px;
+    transition: width 0.3s;
+}
+
+/* ==========================================
+ * Embedded Podcast Player
+ * ========================================== */
+
+.embedded-podcast-player {
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-m);
+    padding: var(--size-4-3);
+    margin: var(--size-4-2) 0;
+    background: var(--background-secondary);
+}
+
+.embedded-player-error {
+    color: var(--text-error);
+    font-size: var(--font-ui-small);
+    padding: var(--size-4-2);
+}
+
+.embedded-player-header {
+    margin-bottom: var(--size-4-2);
+}
+
+.embedded-player-title {
+    font-weight: var(--font-semibold);
+    font-size: var(--font-ui-small);
+    color: var(--text-normal);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.embedded-player-podcast {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+}
+
+.embedded-player-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-2);
+}
+
+.embedded-player-play-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-accent);
+    padding: var(--size-4-1);
+    border-radius: var(--radius-s);
+    flex-shrink: 0;
+}
+
+.embedded-player-play-btn:hover {
+    background-color: var(--background-modifier-hover);
+}
+
+.embedded-player-progress {
+    flex: 1;
+}
+
+.embedded-player-progress-bar {
+    height: 6px;
+    background: var(--background-modifier-border);
+    border-radius: 3px;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.embedded-player-progress-fill {
+    height: 100%;
+    background: var(--text-accent);
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+.embedded-player-time {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    font-family: var(--font-monospace);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.embedded-player-chapters {
+    margin-top: var(--size-4-2);
+    border-top: 1px solid var(--background-modifier-border);
+    padding-top: var(--size-4-1);
 }/ *   L o a d i n g   S p i n n e r   * / 
  . p o d c a s t - s p i n n e r - c o n t a i n e r   { 
          d i s p l a y :   f l e x ; 

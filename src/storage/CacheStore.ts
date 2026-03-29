@@ -191,7 +191,7 @@ export class FeedCacheStore extends MultiFileStore<FeedCacheEntry[], FeedCacheEn
 			};
 			const entry = await this.loadItem(id, defaultEntry);
 
-			if (!entry || !this.validateEntry(entry)) {
+			if (!entry || !entry.feedUrl || !this.validateEntry(entry)) {
 				logger.methodExit('FeedCacheStore', 'getCacheEntry', 'invalid entry');
 				return null;
 			}
@@ -364,7 +364,7 @@ export class ImageCacheStore {
 	 */
 	private async saveIndex(index: ImageCacheIndex): Promise<void> {
 		try {
-			const content = JSON.stringify(index, null, 2);
+			const content = JSON.stringify(index);
 			await this.vault.adapter.write(this.indexFilePath, content);
 		} catch (error) {
 			logger.error('Failed to save image cache index', error);

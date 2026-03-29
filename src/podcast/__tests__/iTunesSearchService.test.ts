@@ -212,10 +212,17 @@ describe('iTunesSearchService', () => {
 
 		it('should handle network error gracefully', async () => {
 			mockRequestUrl.mockRejectedValue(new NetworkError('Network timeout', 'https://itunes.apple.com/search'));
+			// Also mock fetch fallback to fail
+			const originalFetch = global.fetch;
+			global.fetch = jest.fn().mockRejectedValue(new Error('Fetch also failed'));
 
-			// Network errors return empty array for better UX instead of throwing
-			const results = await service.searchPodcasts('test');
-			expect(results).toEqual([]);
+			try {
+				// Network errors return empty array for better UX instead of throwing
+				const results = await service.searchPodcasts('test');
+				expect(results).toEqual([]);
+			} finally {
+				global.fetch = originalFetch;
+			}
 		});
 
 		it('should handle invalid response format', async () => {

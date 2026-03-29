@@ -1,12 +1,7 @@
-import { setIcon, Events, Platform } from 'obsidian';
+import { setIcon, Platform } from 'obsidian';
 import type PodcastPlayerPlugin from '../../main';
+import type { PodcastEvents } from '../model/events';
 import { logger } from '../utils/Logger';
-
-// Type-safe event registration helper
-type PodcastEvents = Events & {
-    on(name: 'podcast:player-state-updated', callback: () => void): ReturnType<Events['on']>;
-    on(name: 'podcast:episode-changed', callback: () => void): ReturnType<Events['on']>;
-};
 
 export class MiniPlayer {
     private plugin: PodcastPlayerPlugin;

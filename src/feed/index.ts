@@ -8,6 +8,7 @@
 // Export parsers
 export { RSSParser } from './RSSParser';
 export { AtomParser } from './AtomParser';
+export { ChapterParser } from './ChapterParser';
 
 // Export feed service
 export {

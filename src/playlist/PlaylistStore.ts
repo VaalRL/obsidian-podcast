@@ -167,7 +167,7 @@ export class PlaylistStore extends MultiFileStore<Playlist[], Playlist> {
 			};
 			const playlist = await this.loadItem(id, defaultPlaylist);
 
-			if (!playlist || !this.validatePlaylist(playlist)) {
+			if (!playlist || !playlist.id || !this.validatePlaylist(playlist)) {
 				logger.methodExit('PlaylistStore', 'getPlaylist', 'invalid');
 				return null;
 			}

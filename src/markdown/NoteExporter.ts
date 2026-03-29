@@ -7,8 +7,8 @@
 
 import { Vault, TFile, normalizePath } from 'obsidian';
 import { logger } from '../utils/Logger';
-import { Episode, Podcast, PlayProgress } from '../model';
-import { formatDate, formatDuration } from '../utils/timeUtils';
+import { Episode, Podcast, PlayProgress, Bookmark, Chapter } from '../model';
+import { formatDate, formatDuration, formatTime } from '../utils/timeUtils';
 
 /**
  * Note export options
@@ -69,7 +69,8 @@ export class NoteExporter {
 		episode: Episode,
 		podcast: Podcast,
 		progress?: PlayProgress,
-		options: NoteExportOptions = {}
+		options: NoteExportOptions = {},
+		bookmarks?: Bookmark[]
 	): Promise<TFile> {
 		logger.methodEntry('NoteExporter', 'exportEpisode', episode.id);
 
@@ -85,7 +86,7 @@ export class NoteExporter {
 		} = options;
 
 		// Generate template variables
-		const variables = this.generateTemplateVariables(episode, podcast, progress);
+		const variables = this.generateTemplateVariables(episode, podcast, progress, bookmarks);
 
 		// Generate note content
 		let content = '';
@@ -105,7 +106,8 @@ export class NoteExporter {
 					includeMetadata,
 					includeTimestamps,
 					includeProgress,
-				}
+				},
+				bookmarks
 			);
 		}
 
@@ -138,7 +140,8 @@ export class NoteExporter {
 			includeMetadata: boolean;
 			includeTimestamps: boolean;
 			includeProgress: boolean;
-		}
+		},
+		bookmarks?: Bookmark[]
 	): string {
 		const sections: string[] = [];
 
@@ -158,6 +161,16 @@ export class NoteExporter {
 		// Progress
 		if (options.includeProgress && progress) {
 			sections.push(this.generateProgressSection(progress));
+		}
+
+		// Bookmarks
+		if (bookmarks && bookmarks.length > 0) {
+			sections.push(this.generateBookmarksSection(bookmarks));
+		}
+
+		// Chapters
+		if (episode.chapters && episode.chapters.length > 0) {
+			sections.push(this.generateChaptersSection(episode.chapters));
 		}
 
 		// Description
@@ -215,12 +228,9 @@ export class NoteExporter {
 		for (const [key, value] of Object.entries(frontMatter)) {
 			if (value !== undefined && value !== null) {
 				if (typeof value === 'string') {
-					// Quote strings that contain colons
-					if (value.includes(':')) {
-						lines.push(`${key}: "${value}"`);
-					} else {
-						lines.push(`${key}: ${value}`);
-					}
+					// Always quote strings and escape internal quotes to prevent YAML injection
+					const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+					lines.push(`${key}: "${escaped}"`);
 				} else if (typeof value === 'number' || typeof value === 'boolean') {
 					lines.push(`${key}: ${value}`);
 				} else if (typeof value === 'object') {
@@ -302,6 +312,52 @@ export class NoteExporter {
 	}
 
 	/**
+	 * Generate bookmarks section
+	 */
+	private generateBookmarksSection(bookmarks: Bookmark[]): string {
+		const sorted = [...bookmarks].sort((a, b) => a.position - b.position);
+		const lines = ['## Bookmarks\n'];
+
+		for (const bookmark of sorted) {
+			const time = formatTime(bookmark.position);
+			const label = bookmark.label
+				? `: ${this.sanitizeMarkdownInline(bookmark.label)}`
+				: '';
+			lines.push(`- [${time}]${label}`);
+		}
+
+		lines.push('');
+		return lines.join('\n');
+	}
+
+	/**
+	 * Sanitize inline text for safe markdown interpolation
+	 */
+	private sanitizeMarkdownInline(text: string): string {
+		return text
+			.replace(/\r?\n/g, ' ')
+			.replace(/\[\[/g, '\\[\\[')
+			.trim();
+	}
+
+	/**
+	 * Generate chapters section
+	 */
+	private generateChaptersSection(chapters: Chapter[]): string {
+		const sorted = [...chapters].sort((a, b) => a.startTime - b.startTime);
+		const lines = ['## Chapters\n'];
+
+		for (const chapter of sorted) {
+			const time = formatTime(chapter.startTime);
+			const title = this.sanitizeMarkdownInline(chapter.title);
+			lines.push(`- [${time}] ${title}`);
+		}
+
+		lines.push('');
+		return lines.join('\n');
+	}
+
+	/**
 	 * Generate notes section
 	 */
 	private generateNotesSection(): string {
@@ -318,7 +374,8 @@ export class NoteExporter {
 	private generateTemplateVariables(
 		episode: Episode,
 		podcast: Podcast,
-		progress?: PlayProgress
+		progress?: PlayProgress,
+		bookmarks?: Bookmark[]
 	): TemplateVariables {
 		const variables: TemplateVariables = {
 			episodeTitle: episode.title,
@@ -338,6 +395,18 @@ export class NoteExporter {
 			const percentage = Math.round((progress.position / progress.duration) * 100);
 			variables.progress = formatDuration(progress.position);
 			variables.completionPercentage = `${percentage}%`;
+		}
+
+		if (bookmarks && bookmarks.length > 0) {
+			variables.bookmarks = this.generateBookmarksSection(bookmarks);
+		} else {
+			variables.bookmarks = '';
+		}
+
+		if (episode.chapters && episode.chapters.length > 0) {
+			variables.chapters = this.generateChaptersSection(episode.chapters);
+		} else {
+			variables.chapters = '';
 		}
 
 		return variables;

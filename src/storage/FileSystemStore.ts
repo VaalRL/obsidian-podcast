@@ -73,7 +73,7 @@ export abstract class FileSystemStore<T> {
 			}
 
 			// Write new content
-			const content = JSON.stringify(data, null, 2);
+			const content = JSON.stringify(data);
 			await adapter.write(path, content);
 
 			logger.debug('Wrote JSON file', path);

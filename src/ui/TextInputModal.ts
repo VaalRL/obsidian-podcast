@@ -35,18 +35,22 @@ export class TextInputModal extends Modal {
 
         new Setting(contentEl)
             .setName(this.message)
-            .addText(text => text
-                .setValue(this.defaultValue)
-                .onChange(value => {
-                    inputValue = value;
-                })
-                .inputEl.addEventListener('keydown', (e) => {
+            .addText(text => {
+                text.setValue(this.defaultValue)
+                    .onChange(value => {
+                        inputValue = value;
+                    });
+                text.inputEl.setAttribute('maxlength', '200');
+                text.inputEl.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         this.result = inputValue;
                         this.close();
                     }
-                }));
+                });
+                // Auto-focus the input
+                setTimeout(() => text.inputEl.focus(), 10);
+            });
 
         // Buttons
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });

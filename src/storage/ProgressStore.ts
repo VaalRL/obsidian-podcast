@@ -271,7 +271,7 @@ export class ProgressStore extends SingleFileStore<ProgressData> {
 
 		if (index !== -1) {
 			data.progress.splice(index, 1);
-			await this.save(data);
+			await this.save(data, true);
 		}
 
 		logger.methodExit('ProgressStore', 'resetProgress');
@@ -288,7 +288,7 @@ export class ProgressStore extends SingleFileStore<ProgressData> {
 
 		if (index !== -1) {
 			data.progress.splice(index, 1);
-			await this.save(data);
+			await this.save(data, true);
 		}
 
 		logger.methodExit('ProgressStore', 'removeProgress');
@@ -303,7 +303,7 @@ export class ProgressStore extends SingleFileStore<ProgressData> {
 		const data = await this.load();
 		data.progress = data.progress.filter(p => p.podcastId !== podcastId);
 
-		await this.save(data);
+		await this.save(data, true);
 		logger.methodExit('ProgressStore', 'removePodcastProgress');
 	}
 
@@ -397,7 +397,7 @@ export class ProgressStore extends SingleFileStore<ProgressData> {
 		// Keep only the most recent N
 		data.progress = sorted.slice(0, keepRecentCount);
 
-		await this.save(data);
+		await this.save(data, true);
 		logger.methodExit('ProgressStore', 'cleanupOldProgress');
 	}
 
@@ -423,7 +423,7 @@ export class ProgressStore extends SingleFileStore<ProgressData> {
 
 		if (replace) {
 			// Replace all progress
-			await this.save(importData);
+			await this.save(importData, true);
 		} else {
 			// Merge with existing progress
 			const currentData = await this.load();
@@ -451,7 +451,7 @@ export class ProgressStore extends SingleFileStore<ProgressData> {
 			await this.save({
 				progress: mergedProgress,
 				version: ProgressStore.CURRENT_VERSION,
-			});
+			}, true);
 		}
 
 		logger.methodExit('ProgressStore', 'importProgress');
@@ -466,7 +466,7 @@ export class ProgressStore extends SingleFileStore<ProgressData> {
 		await this.save({
 			progress: [],
 			version: ProgressStore.CURRENT_VERSION,
-		});
+		}, true);
 
 		logger.methodExit('ProgressStore', 'clearAll');
 	}

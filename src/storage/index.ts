@@ -27,3 +27,4 @@ export {
 	type FeedCacheEntry,
 	type ImageCacheEntry,
 } from './CacheStore';
+export { BookmarkStore, type BookmarkData } from './BookmarkStore';

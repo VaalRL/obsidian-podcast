@@ -96,6 +96,10 @@ export interface Episode {
 	mimeType?: string;
 	/** Episode GUID (from RSS feed) */
 	guid?: string;
+	/** Chapter markers (if available from feed) */
+	chapters?: Chapter[];
+	/** Podcasting 2.0 external chapters JSON URL (lazy-fetched) */
+	chaptersUrl?: string;
 }
 
 /**
@@ -217,6 +221,38 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 };
 
 /**
+ * Chapter - A chapter marker within an episode
+ */
+export interface Chapter {
+	/** Chapter title */
+	title: string;
+	/** Start time in seconds */
+	startTime: number;
+	/** End time in seconds (optional, may be inferred from next chapter) */
+	endTime?: number;
+	/** Chapter image URL (optional) */
+	imageUrl?: string;
+	/** Chapter link/URL (optional) */
+	url?: string;
+}
+
+/**
+ * Bookmark - A timestamped bookmark within an episode
+ */
+export interface Bookmark {
+	/** Unique identifier */
+	id: string;
+	/** Episode ID */
+	episodeId: string;
+	/** Timestamp position in seconds */
+	position: number;
+	/** Optional user-provided label */
+	label?: string;
+	/** Creation timestamp */
+	createdAt: Date;
+}
+
+/**
  * Playback State - Current player state
  */
 export interface PlaybackState {
@@ -274,4 +310,53 @@ export interface PodcastSearchResult {
 	episodeCount?: number;
 	/** List of genres/categories */
 	genres?: string[];
+}
+
+/**
+ * Aggregated listening statistics for the dashboard
+ */
+export interface ListeningStatistics {
+	/** Total listening time in seconds */
+	totalListeningTime: number;
+	/** Total episodes completed */
+	totalCompleted: number;
+	/** Total episodes in progress */
+	totalInProgress: number;
+	/** Total subscribed podcasts */
+	totalPodcasts: number;
+	/** Per-podcast breakdown */
+	podcastBreakdown: PodcastListeningStats[];
+	/** Listening streak (consecutive days with listening activity) */
+	currentStreak: number;
+	/** Longest listening streak */
+	longestStreak: number;
+	/** Recent activity (last 30 days, by day) */
+	dailyActivity: DailyActivity[];
+	/** Average listening time per day (seconds) */
+	averageDailyListeningTime: number;
+}
+
+/**
+ * Per-podcast listening statistics
+ */
+export interface PodcastListeningStats {
+	podcastId: string;
+	podcastTitle: string;
+	imageUrl?: string;
+	totalListeningTime: number;
+	completedEpisodes: number;
+	inProgressEpisodes: number;
+	totalEpisodes: number;
+}
+
+/**
+ * Daily listening activity
+ */
+export interface DailyActivity {
+	/** Date in YYYY-MM-DD format */
+	date: string;
+	/** Total listening time in seconds for this day */
+	listeningTimeSeconds: number;
+	/** Number of episodes played this day */
+	episodesPlayed: number;
 }

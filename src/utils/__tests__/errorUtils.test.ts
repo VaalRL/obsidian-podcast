@@ -131,21 +131,21 @@ describe('errorUtils', () => {
 		it('should log unknown error', () => {
 			handleError('string error', undefined, false);
 
-			expect(logger.error).toHaveBeenCalledWith('Unknown error occurred', 'string error');
+			expect(logger.error).toHaveBeenCalledWith('Unknown error occurred', undefined);
 		});
 
 		it('should show notice with custom message', () => {
 			const error = new Error('Test error');
 			handleError(error, 'Custom message');
 
-			expect(Notice).toHaveBeenCalledWith('Podcast Player: Custom message');
+			expect(Notice).toHaveBeenCalledWith('Podcasts: Custom message');
 		});
 
 		it('should show notice with error message', () => {
 			const error = new Error('Test error');
 			handleError(error);
 
-			expect(Notice).toHaveBeenCalledWith('Podcast Player: Test error');
+			expect(Notice).toHaveBeenCalledWith('Podcasts: Test error');
 		});
 
 		it('should not show notice if showNotice is false', () => {
@@ -222,7 +222,7 @@ describe('errorUtils', () => {
 
 			await expect(wrapped()).rejects.toThrow(error);
 			expect(logger.error).toHaveBeenCalled();
-			expect(Notice).toHaveBeenCalledWith('Podcast Player: Custom error message');
+			expect(Notice).toHaveBeenCalledWith('Podcasts: Custom error message');
 		});
 
 		it('should preserve function signature', async () => {

@@ -15,3 +15,5 @@ export { PodcastSettingsModal } from './PodcastSettingsModal';
 export { EpisodeDetailModal } from './EpisodeDetailModal';
 export { TextInputModal } from './TextInputModal';
 export { MiniPlayer } from './MiniPlayer';
+export { StatisticsView, STATISTICS_VIEW_TYPE } from './StatisticsView';
+export { registerEmbeddedPlayerProcessor } from './EmbeddedPlayerProcessor';

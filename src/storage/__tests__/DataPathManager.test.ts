@@ -56,6 +56,7 @@ describe('DataPathManager', () => {
 			const structure = manager.getStructure();
 			expect(structure).toHaveProperty('root');
 			expect(structure).toHaveProperty('subscriptions');
+			expect(structure).toHaveProperty('subscriptionEpisodes');
 			expect(structure).toHaveProperty('progress');
 			expect(structure).toHaveProperty('playlists');
 			expect(structure).toHaveProperty('queues');
@@ -108,8 +109,8 @@ describe('DataPathManager', () => {
 
 			await manager.ensureDirectories();
 
-			// Should create base directory + 8 subdirectories
-			expect(mockAdapter.mkdir).toHaveBeenCalledTimes(9);
+			// Should create base directory + 9 subdirectories
+			expect(mockAdapter.mkdir).toHaveBeenCalledTimes(10);
 			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcasts/data');
 			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcasts/data/subscriptions');
 			expect(mockAdapter.mkdir).toHaveBeenCalledWith('.obsidian/plugins/podcasts/data/playlists');
@@ -127,6 +128,7 @@ describe('DataPathManager', () => {
 			mockAdapter.exists
 				.mockResolvedValueOnce(true) // base exists
 				.mockResolvedValueOnce(false) // subscriptions missing
+				.mockResolvedValueOnce(true) // subscriptionEpisodes exists
 				.mockResolvedValueOnce(true) // progress exists
 				.mockResolvedValueOnce(false) // playlists missing
 				.mockResolvedValue(true); // rest exist
